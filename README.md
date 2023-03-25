@@ -1,0 +1,1 @@
+# RHEL_8_STIG_Autoanswer_Script
