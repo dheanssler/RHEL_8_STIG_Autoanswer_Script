@@ -15,6 +15,9 @@ cd "$parent_path"
 #Ensure Path Variable Contains sbin
 PATH=$PATH:/usr/sbin
 
+#Get List of Local Users
+localUsers=$(cat /etc/passwd | grep -Ev "nologin|false|sync|shutdown|true|halt")
+
 
 #########FUNCTIONS##########
 checkForSetting () {
@@ -74,7 +77,7 @@ checkDriveEncryption () {
 				if [ "$luksKeyLength" -gt "511" ]; then
 					printf "\tNOT A FINDING: $blockDevice is encrypted with AES-256 bit encryption.\n"
 				else
-					"\tPOTENTIAL FINDING: $blockDevice effective encryption key size is less than 256 bits.\n"
+					printf "\tPOTENTIAL FINDING: $blockDevice effective encryption key size is less than 256 bits.\n"
 				fi
 			else
 				printf "\tPOTENTIAL FINDING: $blockDevice is not encrypted using an AES algorithm.\n"
@@ -89,19 +92,62 @@ checkDriveEncryption () {
 	done
 }
 
-checkForSSHBanner () {
-	bannerLocation=$(grep -v "#" /etc/ssh/sshd_config* | grep -i "banner" | awk '{print $2}')
+checkForBanner () {
+	searchTerm=$1
+	searchLocation=$2
+	expectedBannerLength=$3
+	questionNumber=$4
+	bannerLocation=$(grep -vrh "#" "$searchLocation" | grep -i "$searchTerm" | grep -E -o "/.*")
 	if (( "$(echo -n $bannerLocation | wc -c)" > 0 )); then
 		bannerWordCount=$(cat $bannerLocation | wc -w)
-		if [ $bannerWordCount -eq "189" ]; then
-			printf "Question Number 6: Not a Finding\n"
+		if [ $bannerWordCount -eq "$expectedBannerLength" ]; then
+			printf "Question Number $questionNumber: Not a Finding\n"
 		else
-			printf "Question Number 6: Finding \n"
-			printf "\tReason: The word count ($bannerWordCount) of the banner does not match the word count of the standard DOD Notice and Consent Banner.\n"
+			printf "Question Number $questionNumber: Finding \n"
+			printf "\tReason: The word count ($bannerWordCount) of the file does not match the word count of the standard DOD Notice and Consent Banner.\n"
 		fi
 	else
-		printf "Question Number 6: Finding\n"
+		printf "Question Number $questionNumber: Finding\n"
+		printf "\tReason: The path to $searchTerm was not set in the configuration file $searchLocation.\n"
 	fi
+}
+
+checkSettingContains () {
+	searchString=$1
+	searchLocation=$2
+	matchString=$3
+	questionNumber=$4
+
+	searchResults=$(sudo grep -ih $searchString $searchLocation 2>/dev/null)
+
+	if [[ "${searchResults^^}" =~ "${matchString^^}" ]]; then
+		printf "Question Number $questionNumber: Not a Finding\n"
+	else
+		printf "Question Number $questionNumber: Finding\n"
+		printf "\tReason: The setting '$matchString' was not found in the configuration file '$searchLocation'.\n"
+	fi
+}
+
+unclearRequirementNeedtoRevist () {
+	printf "Question $1: The requirements for meeting this STIG aren't clear.\n"
+}
+
+checkDODRootCA () {
+	questionNumber=$1
+	searchResults=$(sudo openssl x509 -text -in /etc/sssd/pki/sssd_auth_ca_db.pem 2>/dev/null)
+	if (( "$(echo -n $searchResults | wc -c)" > 0 )); then
+		printf "Question Number $questionNumber: Review the following certificate information to confirm that the root ca is a DoD-issued certificate with a valid date.\n"
+	else
+		printf "Question Number $questionNumber: POTENTIAL FINDING: If the System Administrator demonstrates the use of an approved alternate multifactor authentication method, this requirement is not applicable.\n"
+	fi
+}
+
+checkSSHKeyPasswords () {
+	sshDirectories=$(find / -type d -name .ssh 2>/dev/null)
+	for sshDirectory in $sshDirectories; do
+		printf "$sshDirectory\n"
+	done
+	#TODO Foreach loop to go through each directory
 }
 
 checkForSetting "automaticloginenable" "/etc/gdm/custom.conf" "automaticloginenable=false" "1"
@@ -109,4 +155,9 @@ checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
 checkForSetting "logout" "/etc/dconf/db/local.d/*" "logout=''" "3"
 checkUpdateHistory
 checkDriveEncryption
-checkForSSHBanner
+checkForBanner "banner" "/etc/ssh/sshd_config" "189" "6"
+checkSettingContains "banner-message-text" "/etc/dconf/db/local.d/*" "banner-message-text='You are accessing a U.S. Government (USG) Information System (IS)" "7"
+checkSettingContains "USG" "/etc/issue" "You are accessing a U.S. Government (USG) Information System (IS)" "8"
+unclearRequirementNeedtoRevist "9"
+checkDODRootCA "10"
+checkSSHKeyPasswords "11"
