@@ -27,13 +27,13 @@ checkForSetting () {
 	searchLocation=$2
 	questionNumber=$3
 
-	echo $searchString
-	echo $searchLocation
-	echo $questionNumber
+	#echo $searchString
+	#echo $searchLocation
+	#echo $questionNumber
 
 	searchResults=$(sudo grep -ioh $searchString $searchLocation 2>/dev/null)
 	IFS=$oldIFS
-	echo $searchResults
+	#echo $searchResults
 
 	if [ "${searchResults^^}" == "${searchString^^}" ]; then
 		printf "Question Number $questionNumber: Not a Finding\n"
@@ -189,12 +189,21 @@ checkFilePermissions () {
 	permissions2=$(echo -n $3 | tr -d '"')
 	failIfFound=$4
 	questionNumber=$5
-	result=$(find "$1" -type "$2" $permissions2 -print 2>/dev/null)
+	followSymLinks=$7
+	results=""
+	
+	if [ $followSymLinks == "TRUE" ]; then
+		result=$(find -L $startDirectory -type $type $permissions2 -print 2>/dev/null)
+	else
+		result=$(find $startDirectory -type $type $permissions2 -print 2>/dev/null)	
+	fi
+	
+	echo $result
 	
 	if [[ $result ]]; then
 		if [ $failIfFound == "TRUE" ]; then
 			printf "Question Number $questionNumber: Finding\n"
-			printf "\tReason: Multiple objects of type '$type' within directory '$startDirectory' were identified that $6\nMatching Objects:\n\t$result\n"
+			printf "\tReason: One or more objects of type '$type' within directory '$startDirectory' were identified that $6\nMatching Objects:\n\t$result\n"
 		else
 			printf "Question Number $questionNumber: Not a Finding\n"
 		fi
@@ -206,6 +215,31 @@ checkFilePermissions () {
 			printf "\tReason: No objects of type '$type' within directory '$startDirectory' were identified that $6\n"
 		fi
 	fi
+}
+
+#TODO: Currently only checks via crontab. Need to include checks within /etc/cron.*
+checkCronjob () {
+	name=$1
+	questionNumber=$2
+	cronJobs=$(crontab -l | grep -v "#" | grep -i "$name")
+	if [ -x "$(command -v $name)" ]; then
+		printf "Question Number $questionNumber: Review the following and validate that the cronjobs are configured per organization standards\n$cronJobs\n"
+		if [[ $cronJobs ]]; then
+			printf "Cronjobs identified via crontab -l for the root user:\n\t$cronJobs\n"
+		else
+			cronJobs=$(grep -rH $name /etc/cron.*)
+			if [[ $cronJobs ]]; then
+				printf "Cronjobs identified via via /etc/cron.* files:\n\t$cronJobs\n"
+			else
+				printf "Question Number $questionNumber: Finding\n"
+				printf "\tReason: No cronjob for $name was found\n"
+			fi
+		fi
+	else
+		printf "Question Number $questionNumber: Finding\n"
+		printf "\tReason: The binary $name does not appear to be installed or available in the current PATH variable\n"
+	fi
+	
 }
 
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
@@ -220,9 +254,12 @@ unclearRequirementNeedtoRevist "9"
 checkDODRootCA "10"
 checkSSHKeyPasswords "11"
 checkCommandOutput "Enforcing" "getenforce" "Enforcing" "12"
-checkFilePermissions "/" "d" "( -perm -0002 -a ! -perm -1000 )" "TRUE" "13" "are world-writable and do not have the sticky bit set."
+checkFilePermissions "/" "d" "( -perm -0002 -a ! -perm -1000 )" "TRUE" "13" "are world-writable and do not have the sticky bit set." "FALSE"
 checkForSetting "oMACs=hmac-sha2-512,hmac-sha2-256" "/etc/crypto-policies/back-ends/opensshserver.config" "14"
 checkForSetting "oCiphers=aes256-ctr,aes192-ctr,aes128-ctr" "/etc/crypto-policies/back-ends/opensshserver.config" "15"
 checkForSetting ".include /etc/crypto-policies/back-ends/opensslcnf.config" "/etc/pki/tls/openssl.cnf" "16"
 checkForSetting "+VERS-ALL:-VERS-DTLS0.9:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1:-VERS-DTLS1.0:+COMP-NULL:" "/etc/crypto-policies/back-ends/gnutls.config" "17"
-checkFilePermissions "/lib /lib64 /usr/lib" "f" "-perm /022" "TRUE" "18" "are group or world-writable."
+checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "-perm /022" "TRUE" "18" "are group or world-writable." "TRUE"
+checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -user root" "TRUE" "19" "are not owned by root." "TRUE"
+checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -group root" "TRUE" "20" "are not group owned by root." "TRUE"
+checkCronjob "aide" "21"
