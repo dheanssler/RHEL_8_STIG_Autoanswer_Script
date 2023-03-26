@@ -21,23 +21,25 @@ localUsers=$(cat /etc/passwd | grep -Ev "nologin|false|sync|shutdown|true|halt")
 
 #########FUNCTIONS##########
 checkForSetting () {
+	oldIFS=$IFS
+	IFS=$'\n'
 	searchString=$1
 	searchLocation=$2
-	matchString=$3
-	questionNumber=$4
-<<com
+	questionNumber=$3
+
 	echo $searchString
 	echo $searchLocation
-	echo $matchString
 	echo $questionNumber
-com
-	searchResults=$(sudo grep -ih $searchString $searchLocation 2>/dev/null)
 
-	if [ "${searchResults^^}" == "${matchString^^}" ]; then
+	searchResults=$(sudo grep -ioh $searchString $searchLocation 2>/dev/null)
+	IFS=$oldIFS
+	echo $searchResults
+
+	if [ "${searchResults^^}" == "${searchString^^}" ]; then
 		printf "Question Number $questionNumber: Not a Finding\n"
 	else
 		printf "Question Number $questionNumber: Finding\n"
-		printf "\tReason: The setting '$matchString' was not found in the configuration file '$searchLocation'.\n"
+		printf "\tReason: The setting '$searchString' was not found in the configuration file '$searchLocation'.\n"
 	fi
 }
 
@@ -143,17 +145,73 @@ checkDODRootCA () {
 }
 
 checkSSHKeyPasswords () {
+	printf "Question Number 11: Review the following files identified as potential private keys. If there are any private keys that are not password protected, this is a finding. \n"
 	sshDirectories=$(find / -type d -name .ssh 2>/dev/null)
 	for sshDirectory in $sshDirectories; do
-		printf "$sshDirectory\n"
+		for file in $(ls $sshDirectory | grep -v .pub); do
+			result=$(ssh-keygen -y -P "" -f "$sshDirectory/$file" 2>&1)
+			if [[ $result =~ "incorrect passphrase" ]]; then
+				printf "\tNOT A FINDING: $sshDirectory/$file is password protected\n"
+			elif [[ $result =~ "invalid format" ]]; then
+				echo -n ""
+			elif [[ $result =~ "ssh-" ]]; then
+				printf "\tFinding: $sshDirectory/$file is not password protected\n"
+			elif [[ $result =~ "UNPROTECTED PRIVATE KEY FILE" ]]; then
+				printf "\tFinding: $sshDirectory/$file has incorrect file permissions\n"
+			else
+				printf "\tPOTENTIAL FINDING: Output not recognized for $sshDirectory/$file. Verify manually.\n"
+			fi
+		done
 	done
-	#TODO Foreach loop to go through each directory
 }
 
-checkForSetting "automaticloginenable" "/etc/gdm/custom.conf" "automaticloginenable=false" "1"
+#"key" "command" "expected result" "questionNumber"
+checkCommandOutput () {
+	key=$1
+	command=$2
+	matchString=$3
+	questionNumber=$4
+	result=$($command 2>&1 | grep $key)
+	
+	if [[ $result =~ "$matchString" ]]; then
+		printf "Question Number $questionNumber: Not a Finding\n"
+	else
+		printf "Question Number $questionNumber: Finding\n"
+		printf "\tReason: The output of '$command' did not return the expected result '$matchString'\n\tThe result was '$result'\n"
+	fi
+}
+
+# "startDirectory" "type" "permissions" "failIfFound" "questionNumber"
+checkFilePermissions () {
+	startDirectory=$1
+	type=$2
+	permissions=$3
+	permissions2=$(echo -n $3 | tr -d '"')
+	failIfFound=$4
+	questionNumber=$5
+	result=$(find "$1" -type "$2" $permissions2 -print 2>/dev/null)
+	
+	if [[ $result ]]; then
+		if [ $failIfFound == "TRUE" ]; then
+			printf "Question Number $questionNumber: Finding\n"
+			printf "\tReason: Multiple objects of type '$type' within directory '$startDirectory' were identified that $6\nMatching Objects:\n\t$result\n"
+		else
+			printf "Question Number $questionNumber: Not a Finding\n"
+		fi
+	else #not found
+		if [ $failIfFound == "TRUE" ]; then
+			printf "Question Number $questionNumber: Not a Finding\n"
+		else
+			printf "Question Number $questionNumber: Finding\n"
+			printf "\tReason: No objects of type '$type' within directory '$startDirectory' were identified that $6\n"
+		fi
+	fi
+}
+
+checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
-checkForSetting "logout" "/etc/dconf/db/local.d/*" "logout=''" "3"
-checkUpdateHistory
+checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
+#checkUpdateHistory
 checkDriveEncryption
 checkForBanner "banner" "/etc/ssh/sshd_config" "189" "6"
 checkSettingContains "banner-message-text" "/etc/dconf/db/local.d/*" "banner-message-text='You are accessing a U.S. Government (USG) Information System (IS)" "7"
@@ -161,3 +219,10 @@ checkSettingContains "USG" "/etc/issue" "You are accessing a U.S. Government (US
 unclearRequirementNeedtoRevist "9"
 checkDODRootCA "10"
 checkSSHKeyPasswords "11"
+checkCommandOutput "Enforcing" "getenforce" "Enforcing" "12"
+checkFilePermissions "/" "d" "( -perm -0002 -a ! -perm -1000 )" "TRUE" "13" "are world-writable and do not have the sticky bit set."
+checkForSetting "oMACs=hmac-sha2-512,hmac-sha2-256" "/etc/crypto-policies/back-ends/opensshserver.config" "14"
+checkForSetting "oCiphers=aes256-ctr,aes192-ctr,aes128-ctr" "/etc/crypto-policies/back-ends/opensshserver.config" "15"
+checkForSetting ".include /etc/crypto-policies/back-ends/opensslcnf.config" "/etc/pki/tls/openssl.cnf" "16"
+checkForSetting "+VERS-ALL:-VERS-DTLS0.9:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1:-VERS-DTLS1.0:+COMP-NULL:" "/etc/crypto-policies/back-ends/gnutls.config" "17"
+checkFilePermissions "/lib /lib64 /usr/lib" "f" "-perm /022" "TRUE" "18" "are group or world-writable."
