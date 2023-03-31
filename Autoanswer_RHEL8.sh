@@ -5,7 +5,8 @@ if ([ -f /usr/bin/id ] && [ "$(/usr/bin/id -u)" -eq "0" ]) || [ "`whoami 2>/dev/
   printf "Script executed as root...\n"
 else
   IAMROOT="0"
-  printf "WARNING: This script has not been executed as root.\n"
+  printf "WARNING: This script has not been executed with root privileges.\nExiting...\n"
+  exit
 fi
 
 #Change directory to script directory.
@@ -314,6 +315,67 @@ checkFileSystemTable () {
 
 }
 
+checkUserHomeDirExists () {
+	questionNumber=$1
+	results=$(pwck -r | grep -E "directory.*does not exist")
+	oldIFS=$IFS
+	IFS=$'\n'
+	printf "Question Number $questionNumber: Review the following for users with non-existent home directories:\n"
+	for result in $results; do 
+		userName=$(echo -n $result | awk '{print $2}' | tr -d "'" | tr -d ":")
+		userHomeDir=$(echo -n $result | awk '{print $4}' | tr -d "'")
+		if [[ $(id -u $userName) -ge 1000 ]]; then
+			printResults "" "ADD" "Finding: The home directory '$userHomeDir' for '$userName' doesn't exist."
+		else
+			printResults "" "ADD" "Potential Finding: The home directory '$userHomeDir' for '$userName' doesn't exist. If this is an interactive user, this is a finding."
+		fi
+	done
+	IFS=$oldIFS
+}
+
+#todo automate permission checking
+checkUserHomeDirPermissions () {
+	questionNumber=$1
+	oldIFS=$IFS
+	IFS=$'\n'
+	table="\tUser Directory Permission Owner Group\n"
+	#correctPermissions="0750"
+	case $questionNumber in
+		"41")
+			printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users has a mode of '0750' or less.\n"
+			#printf "\tDirectory\tPermission\tOwner\tGroup\n"
+		;;
+		
+		"42")
+			printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users are owned by the local user.\n"
+			#printf "\tDirectory\tPermission\tOwner\tGroup\n"
+		;;
+		
+		*)
+		echo "Error"
+		;;	
+	esac
+
+	for userLine in $(cat /etc/passwd); do
+		userName=$(echo -n $userLine | awk -F':' '{print $1}')
+		userHomeDir=$(echo -n $userLine | awk -F':' '{print $6}')
+		if [[ ! $userHomeDir == "/" ]]; then
+			if [[ $(id -u $userName) -ge 1000 ]]; then
+				userHomeDirPermissions=$(stat $userHomeDir --printf "%n %a %U %G" 2>/dev/null)
+				if (( ! $? )); then
+					table="$table$userName $userHomeDirPermissions\n"
+				elif (( $? )); then
+					table="$table$userName $userHomeDir HomeFolderDoesNotExist\n"
+				fi
+			fi
+		fi
+	done
+	printf "$table" | column -t
+	IFS=$oldIFS
+
+
+}
+
 
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
@@ -356,3 +418,8 @@ needtoRevist "36"
 needtoRevist "37"
 checkFilePermissions "/" "d" "-perm -0002 -uid +999 -print" "TRUE" "38" "are world-writable and are not owned by a system account." "FALSE"
 checkFilePermissions "/" "d" "-perm -0002 -gid +999 -print" "TRUE" "39" "are world-writable and are not group owned by a system account." "FALSE"
+checkUserHomeDirExists "40"
+checkUserHomeDirPermissions "41"
+checkUserHomeDirPermissions "42"
+checkUserHomeDirExists "43"
+

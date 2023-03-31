@@ -1,0 +1,189 @@
+Script executed as root...
+Question Number 1: Not a Finding.
+Question Number 2: Not a Finding.
+Question Number 3: Not a Finding.
+Question Number 4: Review the following update history and confirm that updates are being performed in accordance with program requirements.
+Updating Subscription Management repositories.
+ID     | Command line                                       | Date and time    | Action(s)      | Altered
+---------------------------------------------------------------------------------------------------------
+     2 |                                                    | 2023-03-25 14:15 | Install        |    1   
+     1 |                                                    | 2023-03-25 12:57 | Install        | 1413 EE
+
+Question Number 5: Review the following block devices. Ask the system administrator about any devices indicated as not being encrypted. If there is no evidence that a partition or block device is encrypted, this is a finding. 
+	Not a Finding: /dev/mapper/rhel-root is encrypted with AES-256 bit encryption.
+	Not a Finding: /dev/mapper/rhel-swap is encrypted with AES-256 bit encryption.
+	Not a Finding: /dev/mapper/rhel-var_log is encrypted with AES-256 bit encryption.
+	Not a Finding: /dev/mapper/rhel-tmp is encrypted with AES-256 bit encryption.
+	Not a Finding: /dev/mapper/rhel-var is encrypted with AES-256 bit encryption.
+	Not a Finding: /dev/mapper/rhel-var_log_audit is encrypted with AES-256 bit encryption.
+	Not a Finding: /dev/mapper/rhel-var_tmp is encrypted with AES-256 bit encryption.
+	Not a Finding: /dev/mapper/rhel-home is encrypted with AES-256 bit encryption.
+	Potential Finding: /dev/sda1 is not encrypted.
+	Potential Finding: /dev/sda2 is not encrypted.
+	Potential Finding: /dev/mapper/luks-087b81af-e6e7-4de1-8f6b-aee0478d883e is not encrypted.
+	Potential Finding: /dev/mapper/luks-502a9547-d1f6-437f-a56b-3e64e400d19f is not encrypted.
+	Potential Finding: /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1 is not encrypted.
+	Potential Finding: /dev/mapper/luks-b5f7546f-1c35-45a2-995e-312e468c0e91 is not encrypted.
+	Potential Finding: /dev/mapper/luks-fcdb5eba-1efd-4f74-85c6-4f91ce390084 is not encrypted.
+	Potential Finding: /dev/mapper/luks-51f923f0-7981-4111-9650-73d0688b9927 is not encrypted.
+	Potential Finding: /dev/mapper/luks-19407306-41ff-4797-8093-80c4fd39922a is not encrypted.
+	Potential Finding: /dev/mapper/luks-ff724e64-090b-41b5-b354-bcdb28c0ec42 is not encrypted.
+Question Number 6: Not a Finding.
+Question Number 7: Finding
+	Reason: The setting 'banner-message-text='You are accessing a U.S. Government (USG) Information System (IS)' was not found in the configuration file '/etc/dconf/db/local.d/*'.
+Question Number 8: Not a Finding.
+Question Number 9: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 10: Potential Finding: If the System Administrator demonstrates the use of an approved alternate multifactor authentication method, this requirement is not applicable.
+Question Number 11: Review the following files identified as potential private keys. If there are any private keys that are not password protected, this is a finding. 
+	Not a Finding: /root/.ssh/id_rsa is password protected
+	Finding: /root/.ssh/id_rsa2 is not password protected.
+	Finding: /root/.ssh/issue2 has incorrect file permissions
+Question Number 12: Not a Finding.
+Question Number 13: Finding
+	Reason: One or more objects of type 'd' within directory '/' were identified that are world-writable and do not have the sticky bit set.
+Matching Objects:
+	/home/redhat/test
+/home/test
+Question Number 14: Not a Finding.
+Question Number 15: Not a Finding.
+Question Number 16: Not a Finding.
+Question Number 17: Finding
+	Reason: The setting '+VERS-ALL:-VERS-DTLS0.9:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1:-VERS-DTLS1.0:+COMP-NULL:' was not found in the configuration file '/etc/crypto-policies/back-ends/gnutls.config'.
+Question Number 18: Finding
+	Reason: One or more objects of type 'f' within directory '/lib /lib64 /usr/lib /usr/lib64' were identified that are group or world-writable.
+Matching Objects:
+	/lib/mylib
+/lib64/testlib64
+/usr/lib/mylib
+/usr/lib64/testlib64
+Question Number 19: Finding
+	Reason: One or more objects of type 'f' within directory '/lib /lib64 /usr/lib /usr/lib64' were identified that are not owned by root.
+Matching Objects:
+	/lib/mylib
+/usr/lib/mylib
+Question Number 20: Finding
+	Reason: One or more objects of type 'f' within directory '/lib /lib64 /usr/lib /usr/lib64' were identified that are not group owned by root.
+Matching Objects:
+	/lib/.build-id/65/9888bf8e6fcb97955ea079b5a78280e5e8b653
+/lib/.build-id/17/d904ce8506673ae7259126bd92fe0b90b6bdd5
+/lib/.build-id/6f/f5b3ceebc245f5d0d0b7eab0f06f3b5ad249d5
+/lib/.build-id/76/846adf833dd78ef2ae9f5c8b444b6760f9ad1a
+/lib/.build-id/8d/79337e0b56852d02c2e588be6855fc0ef75d56
+/lib/.build-id/a8/f89ba69362c982ac7493e884345a9edbbabcb6
+/lib/.build-id/c4/5db1cd0f3e08de31a4bed1ebaad5f4fa006095
+/lib/.build-id/df/440cb01394109a88189e7e5603ddea03fe5def
+/lib/.build-id/08/41e4cbdf555f4ee34362b2f6a9e5992b2a8fad
+/lib/.build-id/88/d9abd82ad8dd43c2c480aa59f8afc29fae5e8f
+/lib/.build-id/73/eb3bf0cbbbbbc678a2270c4f4b7ae2bf8a71fe
+/lib/.build-id/73/eb4ef99cfee3722cdf844b10f48899eb2789c8
+/lib/.build-id/b9/3de46de7487611ae1905be5ea5e2d695c960e8
+/lib/mylib
+/lib/mylibgroup
+/usr/lib/.build-id/65/9888bf8e6fcb97955ea079b5a78280e5e8b653
+/usr/lib/.build-id/17/d904ce8506673ae7259126bd92fe0b90b6bdd5
+/usr/lib/.build-id/6f/f5b3ceebc245f5d0d0b7eab0f06f3b5ad249d5
+/usr/lib/.build-id/76/846adf833dd78ef2ae9f5c8b444b6760f9ad1a
+/usr/lib/.build-id/8d/79337e0b56852d02c2e588be6855fc0ef75d56
+/usr/lib/.build-id/a8/f89ba69362c982ac7493e884345a9edbbabcb6
+/usr/lib/.build-id/c4/5db1cd0f3e08de31a4bed1ebaad5f4fa006095
+/usr/lib/.build-id/df/440cb01394109a88189e7e5603ddea03fe5def
+/usr/lib/.build-id/08/41e4cbdf555f4ee34362b2f6a9e5992b2a8fad
+/usr/lib/.build-id/88/d9abd82ad8dd43c2c480aa59f8afc29fae5e8f
+/usr/lib/.build-id/73/eb3bf0cbbbbbc678a2270c4f4b7ae2bf8a71fe
+/usr/lib/.build-id/73/eb4ef99cfee3722cdf844b10f48899eb2789c8
+/usr/lib/.build-id/b9/3de46de7487611ae1905be5ea5e2d695c960e8
+/usr/lib/mylib
+/usr/lib/mylibgroup
+Question Number 21: Review the following and validate that the cronjobs are configured per organization standards
+	Finding: No cronjob for aide was found
+Question Number 22: Not a Finding.
+Question Number 23: Not a Finding.
+Question Number 24: Not a Finding.
+Question Number 25: Finding
+	Reason: The output of 'grub2-editenv list' did not return the expected result 'page_poison=1'
+	The result found was ''
+Question Number 26a: Finding
+	Reason: The output of 'grub2-editenv list' did not return the expected result 'vsyscall=none'
+	The result found was ''
+Question Number 26b: Not a Finding.
+Question Number 27a: Finding
+	Reason: The output of 'grub2-editenv list' did not return the expected result 'slub_debug=P'
+	The result found was ''
+Question Number 27b: Not a Finding.
+Question Number 28: Not a Finding.
+Question Number 29: Not a Finding.
+Question Number 30: Review the following file system mounts:
+	Potential Finding: The option nodev was not found for mount '/' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
+	Potential Finding: The option nodev was not found for mount '/boot' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
+	Potential Finding: The option nodev was not found for mount '/home' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
+	Not a Finding: The option nodev was found for mount '/tmp' of type 'xfs'.
+	Potential Finding: The option nodev was not found for mount '/var' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
+	Not a Finding: The option nodev was found for mount '/var/log' of type 'xfs'.
+	Not a Finding: The option nodev was found for mount '/var/log/audit' of type 'xfs'.
+	Not a Finding: The option nodev was found for mount '/var/tmp' of type 'xfs'.
+	Potential Finding: The option nodev was not found for mount 'none' of type 'swap'. Confirm that this mounted file system does not refer to removable media.
+Question Number 31: Review the following file system mounts:
+	Potential Finding: The option noexec was not found for mount '/' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
+	Potential Finding: The option noexec was not found for mount '/boot' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
+	Not a Finding: The option noexec was found for mount '/home' of type 'xfs'.
+	Not a Finding: The option noexec was found for mount '/tmp' of type 'xfs'.
+	Potential Finding: The option noexec was not found for mount '/var' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
+	Not a Finding: The option noexec was found for mount '/var/log' of type 'xfs'.
+	Not a Finding: The option noexec was found for mount '/var/log/audit' of type 'xfs'.
+	Not a Finding: The option noexec was found for mount '/var/tmp' of type 'xfs'.
+	Potential Finding: The option noexec was not found for mount 'none' of type 'swap'. Confirm that this mounted file system does not refer to removable media.
+Question Number 32: Review the following file system mounts:
+	Potential Finding: The option nosuid was not found for mount '/' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
+	Not a Finding: The option nosuid was found for mount '/boot' of type 'xfs'.
+	Not a Finding: The option nosuid was found for mount '/home' of type 'xfs'.
+	Not a Finding: The option nosuid was found for mount '/tmp' of type 'xfs'.
+	Potential Finding: The option nosuid was not found for mount '/var' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
+	Not a Finding: The option nosuid was found for mount '/var/log' of type 'xfs'.
+	Not a Finding: The option nosuid was found for mount '/var/log/audit' of type 'xfs'.
+	Not a Finding: The option nosuid was found for mount '/var/tmp' of type 'xfs'.
+	Potential Finding: The option nosuid was not found for mount 'none' of type 'swap'. Confirm that this mounted file system does not refer to removable media.
+Question Number 33: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 34: Not a Finding.
+Question Number 35: Finding
+	Reason: The unit file 'systemd-coredump.socket' was not masked.
+
+Question Number 36: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 37: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 38: Finding
+	Reason: One or more objects of type 'd' within directory '/' were identified that are world-writable and are not owned by a system account.
+Matching Objects:
+	/home/test
+/home/test
+Question Number 39: Not a Finding.
+Question Number 40: Review the following for users with non-existent home directories:
+	Potential Finding: The home directory '/var/cache/clevis' for 'clevis' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/run/gluster' for 'gluster' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/var/run/pipewire' for 'pipewire' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/var/run/pulse' for 'pulse' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/run/saslauthd' for 'saslauth' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/nonexisting' for 'cockpit-ws' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/nonexisting' for 'cockpit-wsinstance' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/run/gnome-initial-setup/' for 'gnome-initial-setup' doesn't exist. If this is an interactive user, this is a finding.
+	Finding: The home directory 'x' for 'jim' doesn't exist.
+Question Number 41: Verify the assigned home directory of all local interactive users has a mode of '0750' or less.
+User    Directory     Permission              Owner   Group
+redhat  /home/redhat  700                     redhat  redhat
+jim     x             HomeFolderDoesNotExist          
+Question Number 42: Verify the assigned home directory of all local interactive users are owned by the local user.
+User    Directory     Permission              Owner   Group
+redhat  /home/redhat  700                     redhat  redhat
+jim     x             HomeFolderDoesNotExist          
+Question Number 43: Review the following for users with non-existent home directories:
+	Potential Finding: The home directory '/var/cache/clevis' for 'clevis' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/run/gluster' for 'gluster' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/var/run/pipewire' for 'pipewire' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/var/run/pulse' for 'pulse' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/run/saslauthd' for 'saslauth' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/nonexisting' for 'cockpit-ws' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/nonexisting' for 'cockpit-wsinstance' doesn't exist. If this is an interactive user, this is a finding.
+	Potential Finding: The home directory '/run/gnome-initial-setup/' for 'gnome-initial-setup' doesn't exist. If this is an interactive user, this is a finding.
+	Finding: The home directory 'x' for 'jim' doesn't exist.
