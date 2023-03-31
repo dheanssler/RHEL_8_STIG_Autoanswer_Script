@@ -208,20 +208,38 @@ checkSSHKeyPasswords () {
 	done
 }
 
-#"key" "command" "expected result" "questionNumber"
+#"key" "command" "expected result" "questionNumber" "secondKey" "secondCommand" "secondMatchString"
 checkCommandOutput () {
 	key=$1
 	command=$2
 	matchString=$3
 	questionNumber=$4
-	result=$($command 2>&1 | grep $key)
+	key2=$5
+	command2=$6
+	matchString2=$7
+	result=$($command 2>&1 | grep -E $key)
+	
+	#echo $key
+	#echo $command
+	#echo $matchString
+	#echo $result
 	
 	if [[ $result =~ "$matchString" ]]; then
 		printResults "$questionNumber" "NFIND" ""
 	else
-		printResults "$questionNumber" "FIND" "The output of '$command' did not return the expected result '$matchString'\n\tThe result was '$result'"
-		#printf "Question Number $questionNumber: Finding\n"
-		#printf "\tReason: The output of '$command' did not return the expected result '$matchString'\n\tThe result was '$result'\n"
+		if [[ $key2 ]]; then
+			result=$($command2 2>&1 | grep -E $key2)
+			if [[ $result =~ "$matchString2" ]]; then
+				printResults "$questionNumber" "NFIND" ""
+			else
+				printResults "$questionNumber" "FIND" "The output of '$command' did not return the expected result '$key$matchString'\n\tThe result was '$result'"
+			fi
+		else
+			printResults "$questionNumber" "FIND" "The output of '$command' did not return the expected result '$key2$matchString2'\n\tThe result found was '$result'"
+			#printf "Question Number $questionNumber: Finding\n"
+			#printf "\tReason: The output of '$command' did not return the expected result '$matchString'\n\tThe result was '$result'\n"
+		fi
+		
 	fi
 }
 
@@ -293,25 +311,35 @@ checkCronjob () {
 	
 }
 
-checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
-checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
-checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
+#checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
+#checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
+#checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
 #checkUpdateHistory "4"
-checkDriveEncryption "5"
-checkForBanner "banner" "/etc/ssh/sshd_config" "189" "6"
-checkSettingContains "banner-message-text" "/etc/dconf/db/local.d/*" "banner-message-text='You are accessing a U.S. Government (USG) Information System (IS)" "7"
-checkSettingContains "USG" "/etc/issue" "You are accessing a U.S. Government (USG) Information System (IS)" "8"
-unclearRequirementNeedtoRevist "9"
-checkDODRootCA "10"
-checkSSHKeyPasswords "11"
-checkCommandOutput "Enforcing" "getenforce" "Enforcing" "12"
-checkFilePermissions "/" "d" "( -perm -0002 -a ! -perm -1000 )" "TRUE" "13" "are world-writable and do not have the sticky bit set." "FALSE"
-checkForSetting "oMACs=hmac-sha2-512,hmac-sha2-256" "/etc/crypto-policies/back-ends/opensshserver.config" "14"
-checkForSetting "oCiphers=aes256-ctr,aes192-ctr,aes128-ctr" "/etc/crypto-policies/back-ends/opensshserver.config" "15"
-checkForSetting ".include /etc/crypto-policies/back-ends/opensslcnf.config" "/etc/pki/tls/openssl.cnf" "16"
-checkForSetting "+VERS-ALL:-VERS-DTLS0.9:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1:-VERS-DTLS1.0:+COMP-NULL:" "/etc/crypto-policies/back-ends/gnutls.config" "17"
-checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "-perm /022" "TRUE" "18" "are group or world-writable." "TRUE"
-checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -user root" "TRUE" "19" "are not owned by root." "TRUE"
-checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -group root" "TRUE" "20" "are not group owned by root." "TRUE"
-checkCronjob "aide" "21"
-checkForSetting "certificate_verification" "/etc/sssd/" "22"
+#checkDriveEncryption "5"
+#checkForBanner "banner" "/etc/ssh/sshd_config" "189" "6"
+#checkSettingContains "banner-message-text" "/etc/dconf/db/local.d/*" "banner-message-text='You are accessing a U.S. Government (USG) Information System (IS)" "7"
+#checkSettingContains "USG" "/etc/issue" "You are accessing a U.S. Government (USG) Information System (IS)" "8"
+#unclearRequirementNeedtoRevist "9"
+#checkDODRootCA "10"
+#checkSSHKeyPasswords "11"
+#checkCommandOutput "Enforcing" "getenforce" "Enforcing" "12"
+#checkFilePermissions "/" "d" "( -perm -0002 -a ! -perm -1000 )" "TRUE" "13" "are world-writable and do not have the sticky bit set." "FALSE"
+#checkForSetting "oMACs=hmac-sha2-512,hmac-sha2-256" "/etc/crypto-policies/back-ends/opensshserver.config" "14"
+#checkForSetting "oCiphers=aes256-ctr,aes192-ctr,aes128-ctr" "/etc/crypto-policies/back-ends/opensshserver.config" "15"
+#checkForSetting ".include /etc/crypto-policies/back-ends/opensslcnf.config" "/etc/pki/tls/openssl.cnf" "16"
+#checkForSetting "+VERS-ALL:-VERS-DTLS0.9:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1:-VERS-DTLS1.0:+COMP-NULL:" "/etc/crypto-policies/back-ends/gnutls.config" "17"
+#checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "-perm /022" "TRUE" "18" "are group or world-writable." "TRUE"
+#checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -user root" "TRUE" "19" "are not owned by root." "TRUE"
+#checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -group root" "TRUE" "20" "are not group owned by root." "TRUE"
+#checkCronjob "aide" "21"
+#checkForSetting "certificate_verification" "/etc/sssd/" "22"
+#"key" "command" "expected result" "questionNumber" "secondKey" "secondCommand" "secondMatchString"
+checkCommandOutput "PIV-II\s*" "opensc-tool --list-drivers" "Personal Identity Verification Card" "23"
+checkCommandOutput "NX\s.Execute\sDisble.\sprotection:\s" "dmesg" "active" "24" "nx" "cat /proc/cpuinfo" "nx"
+checkCommandOutput "page_poison=" "grub2-editenv list" "1" "25"
+checkCommandOutput "vsyscall=" "grub2-editenv list" "none" "26a"
+checkForSetting "GRUB_CMDLINE_LINUX=\"vsyscall=none\"" "/etc/default/grub" "26b"
+checkCommandOutput "slub_debug=" "grub2-editenv list" "P" "27a"
+checkForSetting "GRUB_CMDLINE_LINUX=\"slub_debug=P\"" "/etc/default/grub" "27b"
+checkSettingContains "/home" "/etc/fstab" "nosuid" "28" #may need to revist this one to consider home directories not mounted at /home
+checkSettingContains "/home" "/etc/fstab" "noexec" "29" #may need to revist this one to consider home directories not mounted at /home
