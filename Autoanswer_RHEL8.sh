@@ -106,24 +106,19 @@ checkDriveEncryption () {
 			if [[ $luksCipher =~ "aes" ]]; then
 				if [ "$luksKeyLength" -gt "511" ]; then
 					printResults "" "ADD" "Not a Finding: $blockDevice is encrypted with AES-256 bit encryption."
-					#printf "\tNOT A FINDING: $blockDevice is encrypted with AES-256 bit encryption.\n"
 				else
 					printResults "" "ADD" "Potential Finding: $blockDevice effective encryption key size is less than 256 bits."
-					#printf "\tPOTENTIAL FINDING: $blockDevice effective encryption key size is less than 256 bits.\n"
 				fi
 			else
 				printResults "" "ADD" "Potential Finding: $blockDevice is not encrypted using an AES algorithm."
-				#printf "\tPOTENTIAL FINDING: $blockDevice is not encrypted using an AES algorithm.\n"
 			fi
 		done
 	else
 		printResults "" "ADD" "Potential Finding: CRYPTSETUP COMMAND NOT FOUND"
-		#printf "POTENTIAL FINDING: CRYPTSETUP COMMAND NOT FOUND\n"
 	fi
 	
 	for blockDevice in $nonLuksBlockDevices; do
 		printResults "" "ADD" "Potential Finding: $blockDevice is not encrypted."
-		#printf "\tPOTENTIAL FINDING: $blockDevice is not encrypted.\n"
 	done
 }
 
@@ -142,8 +137,6 @@ checkForBanner () {
 		fi
 	else
 		printResults "$questionNumber" "FIND" "The path to $searchTerm was not set in the configuration file $searchLocation."
-		#printf "Question Number $questionNumber: Finding\n"
-		#printf "\tReason: The path to $searchTerm was not set in the configuration file $searchLocation.\n"
 	fi
 }
 
@@ -157,18 +150,14 @@ checkSettingContains () {
 
 	if [[ "${searchResults^^}" =~ "${matchString^^}" ]]; then
 		printResults "$questionNumber" "NFIND" ""
-		#printf "Question Number $questionNumber: Not a Finding\n"
 	else
 		printResults "$questionNumber" "FIND" "The setting '$matchString' was not found in the configuration file '$searchLocation'."
-		#printf "Question Number $questionNumber: Finding\n"
-		#printf "\tReason: The setting '$matchString' was not found in the configuration file '$searchLocation'.\n"
 	fi
 }
 
 unclearRequirementNeedtoRevist () {
 	questionNumber=$1
 	printResults "$questionNumber" "FIND" "The requirements for meeting this STIG aren't clear."
-	#printf "Question $1: The requirements for meeting this STIG aren't clear.\n"
 }
 
 checkDODRootCA () {
@@ -176,10 +165,8 @@ checkDODRootCA () {
 	searchResults=$(sudo openssl x509 -text -in /etc/sssd/pki/sssd_auth_ca_db.pem 2>/dev/null)
 	if (( "$(echo -n $searchResults | wc -c)" > 0 )); then
 		printResults "$questionNumber" "REVIEW" "Review the following certificate information to confirm that the root ca is a DoD-issued certificate with a valid date."
-		#printf "Question Number $questionNumber: Review the following certificate information to confirm that the root ca is a DoD-issued certificate with a valid date.\n"
 	else
 		printResults "$questionNumber" "PFIND" "If the System Administrator demonstrates the use of an approved alternate multifactor authentication method, this requirement is not applicable."
-		#printf "Question Number $questionNumber: POTENTIAL FINDING: If the System Administrator demonstrates the use of an approved alternate multifactor authentication method, this requirement is not applicable.\n"
 	fi
 }
 
@@ -191,18 +178,14 @@ checkSSHKeyPasswords () {
 			result=$(ssh-keygen -y -P "" -f "$sshDirectory/$file" 2>&1)
 			if [[ $result =~ "incorrect passphrase" ]]; then
 				printResults "" "ADD" "Not a Finding: $sshDirectory/$file is password protected"
-				#printf "\tNOT A FINDING: $sshDirectory/$file is password protected\n"
 			elif [[ $result =~ "invalid format" ]]; then
 				echo -n ""
 			elif [[ $result =~ "ssh-" ]]; then
 				printResults "" "ADD" "Finding: $sshDirectory/$file is not password protected."
-				#printf "\tFinding: $sshDirectory/$file is not password protected\n"
 			elif [[ $result =~ "UNPROTECTED PRIVATE KEY FILE" ]]; then
 				printResults "" "ADD" "Finding: $sshDirectory/$file has incorrect file permissions"
-				#printf "\tFinding: $sshDirectory/$file has incorrect file permissions\n"
 			else
 				printResults "" "ADD" "Potential Finding: Output not recognized for $sshDirectory/$file. Verify manually."
-				#printf "\tPOTENTIAL FINDING: Output not recognized for $sshDirectory/$file. Verify manually.\n"
 			fi
 		done
 	done
@@ -235,9 +218,7 @@ checkCommandOutput () {
 				printResults "$questionNumber" "FIND" "The output of '$command' did not return the expected result '$key$matchString'\n\tThe result was '$result'"
 			fi
 		else
-			printResults "$questionNumber" "FIND" "The output of '$command' did not return the expected result '$key2$matchString2'\n\tThe result found was '$result'"
-			#printf "Question Number $questionNumber: Finding\n"
-			#printf "\tReason: The output of '$command' did not return the expected result '$matchString'\n\tThe result was '$result'\n"
+			printResults "$questionNumber" "FIND" "The output of '$command' did not return the expected result '$key$matchString'\n\tThe result found was '$result'"
 		fi
 		
 	fi
@@ -260,25 +241,17 @@ checkFilePermissions () {
 		result=$(find $startDirectory -type $type $permissions2 -print 2>/dev/null)	
 	fi
 	
-	echo $result
-	
 	if [[ $result ]]; then
 		if [ $failIfFound == "TRUE" ]; then
 			printResults "$questionNumber" "FIND" "One or more objects of type '$type' within directory '$startDirectory' were identified that $6\nMatching Objects:\n\t$result"
-			#printf "Question Number $questionNumber: Finding\n"
-			#printf "\tReason: One or more objects of type '$type' within directory '$startDirectory' were identified that $6\nMatching Objects:\n\t$result\n"
 		else
 			printResults "$questionNumber" "NFIND" ""
-			#printf "Question Number $questionNumber: Not a Finding\n"
 		fi
 	else #not found
 		if [ $failIfFound == "TRUE" ]; then
 			printResults "$questionNumber" "NFIND" ""
-			#printf "Question Number $questionNumber: Not a Finding\n"
 		else
 			printResults "$questionNumber" "FIND" "No objects of type '$type' within directory '$startDirectory' were identified that $6"
-			#printf "Question Number $questionNumber: Finding\n"
-			#printf "\tReason: No objects of type '$type' within directory '$startDirectory' were identified that $6\n"
 		fi
 	fi
 }
@@ -291,48 +264,42 @@ checkCronjob () {
 		printf "Question Number $questionNumber: Review the following and validate that the cronjobs are configured per organization standards\n"
 		if [[ $cronJobs ]]; then
 			printResults "" "ADD" "Cronjobs identified via crontab -l for the root user:\n\t$cronJobs"
-			#printf "Cronjobs identified via crontab -l for the root user:\n\t$cronJobs\n"
 		else
 			cronJobs=$(grep -rH $name /etc/cron.*)
 			if [[ $cronJobs ]]; then
 				printResults "" "ADD" "Cronjobs identified via via /etc/cron.* files:\n\t$cronJobs"
-				#printf "Cronjobs identified via via /etc/cron.* files:\n\t$cronJobs\n"
 			else
 				printResults "" "ADD" "Finding: No cronjob for $name was found" 
-				#printf "Question Number $questionNumber: Finding\n"
-				#printf "\tReason: No cronjob for $name was found\n"
 			fi
 		fi
 	else
 		printResults "$questionNumber" "FIND" "Finding: The binary $name does not appear to be installed or available in the current PATH variable"
-		#printf "Question Number $questionNumber: Finding\n"
-		#printf "\tReason: The binary $name does not appear to be installed or available in the current PATH variable\n"
 	fi
 	
 }
 
-#checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
-#checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
-#checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
-#checkUpdateHistory "4"
-#checkDriveEncryption "5"
-#checkForBanner "banner" "/etc/ssh/sshd_config" "189" "6"
-#checkSettingContains "banner-message-text" "/etc/dconf/db/local.d/*" "banner-message-text='You are accessing a U.S. Government (USG) Information System (IS)" "7"
-#checkSettingContains "USG" "/etc/issue" "You are accessing a U.S. Government (USG) Information System (IS)" "8"
-#unclearRequirementNeedtoRevist "9"
-#checkDODRootCA "10"
-#checkSSHKeyPasswords "11"
-#checkCommandOutput "Enforcing" "getenforce" "Enforcing" "12"
-#checkFilePermissions "/" "d" "( -perm -0002 -a ! -perm -1000 )" "TRUE" "13" "are world-writable and do not have the sticky bit set." "FALSE"
-#checkForSetting "oMACs=hmac-sha2-512,hmac-sha2-256" "/etc/crypto-policies/back-ends/opensshserver.config" "14"
-#checkForSetting "oCiphers=aes256-ctr,aes192-ctr,aes128-ctr" "/etc/crypto-policies/back-ends/opensshserver.config" "15"
-#checkForSetting ".include /etc/crypto-policies/back-ends/opensslcnf.config" "/etc/pki/tls/openssl.cnf" "16"
-#checkForSetting "+VERS-ALL:-VERS-DTLS0.9:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1:-VERS-DTLS1.0:+COMP-NULL:" "/etc/crypto-policies/back-ends/gnutls.config" "17"
-#checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "-perm /022" "TRUE" "18" "are group or world-writable." "TRUE"
-#checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -user root" "TRUE" "19" "are not owned by root." "TRUE"
-#checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -group root" "TRUE" "20" "are not group owned by root." "TRUE"
-#checkCronjob "aide" "21"
-#checkForSetting "certificate_verification" "/etc/sssd/" "22"
+checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
+checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
+checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
+checkUpdateHistory "4"
+checkDriveEncryption "5"
+checkForBanner "banner" "/etc/ssh/sshd_config" "189" "6"
+checkSettingContains "banner-message-text" "/etc/dconf/db/local.d/*" "banner-message-text='You are accessing a U.S. Government (USG) Information System (IS)" "7"
+checkSettingContains "USG" "/etc/issue" "You are accessing a U.S. Government (USG) Information System (IS)" "8"
+unclearRequirementNeedtoRevist "9"
+checkDODRootCA "10"
+checkSSHKeyPasswords "11"
+checkCommandOutput "Enforcing" "getenforce" "Enforcing" "12"
+checkFilePermissions "/" "d" "( -perm -0002 -a ! -perm -1000 )" "TRUE" "13" "are world-writable and do not have the sticky bit set." "FALSE"
+checkForSetting "oMACs=hmac-sha2-512,hmac-sha2-256" "/etc/crypto-policies/back-ends/opensshserver.config" "14"
+checkForSetting "oCiphers=aes256-ctr,aes192-ctr,aes128-ctr" "/etc/crypto-policies/back-ends/opensshserver.config" "15"
+checkForSetting ".include /etc/crypto-policies/back-ends/opensslcnf.config" "/etc/pki/tls/openssl.cnf" "16"
+checkForSetting "+VERS-ALL:-VERS-DTLS0.9:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1:-VERS-DTLS1.0:+COMP-NULL:" "/etc/crypto-policies/back-ends/gnutls.config" "17"
+checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "-perm /022" "TRUE" "18" "are group or world-writable." "TRUE"
+checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -user root" "TRUE" "19" "are not owned by root." "TRUE"
+checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -group root" "TRUE" "20" "are not group owned by root." "TRUE"
+checkCronjob "aide" "21"
+checkForSetting "certificate_verification" "/etc/sssd/" "22"
 #"key" "command" "expected result" "questionNumber" "secondKey" "secondCommand" "secondMatchString"
 checkCommandOutput "PIV-II\s*" "opensc-tool --list-drivers" "Personal Identity Verification Card" "23"
 checkCommandOutput "NX\s.Execute\sDisble.\sprotection:\s" "dmesg" "active" "24" "nx" "cat /proc/cpuinfo" "nx"
