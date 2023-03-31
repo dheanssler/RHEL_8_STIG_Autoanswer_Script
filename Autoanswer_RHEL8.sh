@@ -20,6 +20,35 @@ localUsers=$(cat /etc/passwd | grep -Ev "nologin|false|sync|shutdown|true|halt")
 
 
 #########FUNCTIONS##########
+printResults () {
+	questionNumber=$1
+	result=$2
+	reason=$3
+
+	case $result in
+		"FIND")
+			printf "Question Number $questionNumber: Finding\n"
+			printf "\tReason: $reason\n"
+			;;
+		"NFIND")
+			printf "Question Number $questionNumber: Not a Finding.\n"
+			;;
+		"PFIND")
+			printf "Question Number $questionNumber: Potential Finding: $reason\n"
+			;;
+		"REVIEW")
+			printf "Question Number $questionNumber: $reason\n"
+			;;
+		"ADD")
+			printf "\t$reason\n"
+			;;
+		*)
+			printf "ERROR"
+			;;
+	esac
+}
+
+
 checkForSetting () {
 	oldIFS=$IFS
 	IFS=$'\n'
@@ -31,15 +60,14 @@ checkForSetting () {
 	#echo $searchLocation
 	#echo $questionNumber
 
-	searchResults=$(sudo grep -ioh $searchString $searchLocation 2>/dev/null)
+	searchResults=$(sudo grep -rioh $searchString $searchLocation 2>/dev/null)
 	IFS=$oldIFS
 	#echo $searchResults
 
 	if [ "${searchResults^^}" == "${searchString^^}" ]; then
-		printf "Question Number $questionNumber: Not a Finding\n"
+		printResults "$questionNumber" "NFIND" ""
 	else
-		printf "Question Number $questionNumber: Finding\n"
-		printf "\tReason: The setting '$searchString' was not found in the configuration file '$searchLocation'.\n"
+		printResults "$questionNumber" "FIND" "The setting '$searchString' was not found in the configuration file '$searchLocation'."
 	fi
 }
 
@@ -52,24 +80,24 @@ checkUnitFile () {
 	checkReturnCode=$?
 	
 	if [ $unitFileCheck == $expectedStatus ] && [ $checkReturnCode -eq $expectedReturnCode ]; then
-		printf "Question Number $questionNumber: Not a Finding\n"
+		printResults "$questionNumber" "NFIND" ""
 	else
-		printf "Question Number $questionNumber: Finding\n"
-		printf "\tReason: The unit file '$unitFileName' was not $expectedStatus.\n"
+		printResults "$questionNumber" "FIND" "The unit file '$unitFileName' was not $expectedStatus.\n"
 	fi
 }
 
 checkUpdateHistory () {
+	questionNumber=$1
 	dnfHistory=$(dnf history list | head -n 8 )
-	printf "Question Number 4: Review the following update history and confirm that updates are being performed in accordance with program requirements.\n"
-	printf "$dnfHistory\n"
+	printResults "$questionNumber" "REVIEW" "Review the following update history and confirm that updates are being performed in accordance with program requirements.\n$dnfHistory\n"
 }
 
 checkDriveEncryption () {
+	questionNumber=$1
 	allBlockDevices=$(blkid | awk '{print substr($1,1,length($1)-1)}')
 	nonLuksBlockDevices=$(blkid | grep -v "crypto_LUKS" | awk '{print substr($1,1,length($1)-1)}')
 	luksBlockDevices=$(blkid | grep "crypto_LUKS" | awk '{print substr($1,1,length($1)-1)}')
-	printf "Question Number 5: Review the following block devices. Ask the system administrator about any devices indicated as not being encrypted. If there is no evidence that a partition or block device is encrypted, this is a finding. \n"
+	printf "Question Number $questionNumber: Review the following block devices. Ask the system administrator about any devices indicated as not being encrypted. If there is no evidence that a partition or block device is encrypted, this is a finding. \n"
 	if [ -x "$(command -v cryptsetup)" ]; then
 		for blockDevice in $luksBlockDevices; do
 			luksDumpResults=$(sudo cryptsetup luksDump $blockDevice)
@@ -77,20 +105,25 @@ checkDriveEncryption () {
 			luksKeyLength=$(echo "$luksDumpResults" | grep -E -o "Cipher key:\s[0-9]+" | grep -E -o "[0-9]+")
 			if [[ $luksCipher =~ "aes" ]]; then
 				if [ "$luksKeyLength" -gt "511" ]; then
-					printf "\tNOT A FINDING: $blockDevice is encrypted with AES-256 bit encryption.\n"
+					printResults "" "ADD" "Not a Finding: $blockDevice is encrypted with AES-256 bit encryption."
+					#printf "\tNOT A FINDING: $blockDevice is encrypted with AES-256 bit encryption.\n"
 				else
-					printf "\tPOTENTIAL FINDING: $blockDevice effective encryption key size is less than 256 bits.\n"
+					printResults "" "ADD" "Potential Finding: $blockDevice effective encryption key size is less than 256 bits."
+					#printf "\tPOTENTIAL FINDING: $blockDevice effective encryption key size is less than 256 bits.\n"
 				fi
 			else
-				printf "\tPOTENTIAL FINDING: $blockDevice is not encrypted using an AES algorithm.\n"
+				printResults "" "ADD" "Potential Finding: $blockDevice is not encrypted using an AES algorithm."
+				#printf "\tPOTENTIAL FINDING: $blockDevice is not encrypted using an AES algorithm.\n"
 			fi
 		done
 	else
-		printf "POTENTIAL FINDING: CRYPTSETUP COMMAND NOT FOUND\n"
+		printResults "" "ADD" "Potential Finding: CRYPTSETUP COMMAND NOT FOUND"
+		#printf "POTENTIAL FINDING: CRYPTSETUP COMMAND NOT FOUND\n"
 	fi
 	
 	for blockDevice in $nonLuksBlockDevices; do
-		printf "\tPOTENTIAL FINDING: $blockDevice is not encrypted.\n"
+		printResults "" "ADD" "Potential Finding: $blockDevice is not encrypted."
+		#printf "\tPOTENTIAL FINDING: $blockDevice is not encrypted.\n"
 	done
 }
 
@@ -103,14 +136,14 @@ checkForBanner () {
 	if (( "$(echo -n $bannerLocation | wc -c)" > 0 )); then
 		bannerWordCount=$(cat $bannerLocation | wc -w)
 		if [ $bannerWordCount -eq "$expectedBannerLength" ]; then
-			printf "Question Number $questionNumber: Not a Finding\n"
+			printResults "$questionNumber" "NFIND" ""
 		else
-			printf "Question Number $questionNumber: Finding \n"
-			printf "\tReason: The word count ($bannerWordCount) of the file does not match the word count of the standard DOD Notice and Consent Banner.\n"
+			printResults "$questionNumber" "FIND" "The word count ($bannerWordCount) of the file does not match the word count of the standard DOD Notice and Consent Banner."
 		fi
 	else
-		printf "Question Number $questionNumber: Finding\n"
-		printf "\tReason: The path to $searchTerm was not set in the configuration file $searchLocation.\n"
+		printResults "$questionNumber" "FIND" "The path to $searchTerm was not set in the configuration file $searchLocation."
+		#printf "Question Number $questionNumber: Finding\n"
+		#printf "\tReason: The path to $searchTerm was not set in the configuration file $searchLocation.\n"
 	fi
 }
 
@@ -123,24 +156,30 @@ checkSettingContains () {
 	searchResults=$(sudo grep -ih $searchString $searchLocation 2>/dev/null)
 
 	if [[ "${searchResults^^}" =~ "${matchString^^}" ]]; then
-		printf "Question Number $questionNumber: Not a Finding\n"
+		printResults "$questionNumber" "NFIND" ""
+		#printf "Question Number $questionNumber: Not a Finding\n"
 	else
-		printf "Question Number $questionNumber: Finding\n"
-		printf "\tReason: The setting '$matchString' was not found in the configuration file '$searchLocation'.\n"
+		printResults "$questionNumber" "FIND" "The setting '$matchString' was not found in the configuration file '$searchLocation'."
+		#printf "Question Number $questionNumber: Finding\n"
+		#printf "\tReason: The setting '$matchString' was not found in the configuration file '$searchLocation'.\n"
 	fi
 }
 
 unclearRequirementNeedtoRevist () {
-	printf "Question $1: The requirements for meeting this STIG aren't clear.\n"
+	questionNumber=$1
+	printResults "$questionNumber" "FIND" "The requirements for meeting this STIG aren't clear."
+	#printf "Question $1: The requirements for meeting this STIG aren't clear.\n"
 }
 
 checkDODRootCA () {
 	questionNumber=$1
 	searchResults=$(sudo openssl x509 -text -in /etc/sssd/pki/sssd_auth_ca_db.pem 2>/dev/null)
 	if (( "$(echo -n $searchResults | wc -c)" > 0 )); then
-		printf "Question Number $questionNumber: Review the following certificate information to confirm that the root ca is a DoD-issued certificate with a valid date.\n"
+		printResults "$questionNumber" "REVIEW" "Review the following certificate information to confirm that the root ca is a DoD-issued certificate with a valid date."
+		#printf "Question Number $questionNumber: Review the following certificate information to confirm that the root ca is a DoD-issued certificate with a valid date.\n"
 	else
-		printf "Question Number $questionNumber: POTENTIAL FINDING: If the System Administrator demonstrates the use of an approved alternate multifactor authentication method, this requirement is not applicable.\n"
+		printResults "$questionNumber" "PFIND" "If the System Administrator demonstrates the use of an approved alternate multifactor authentication method, this requirement is not applicable."
+		#printf "Question Number $questionNumber: POTENTIAL FINDING: If the System Administrator demonstrates the use of an approved alternate multifactor authentication method, this requirement is not applicable.\n"
 	fi
 }
 
@@ -151,15 +190,19 @@ checkSSHKeyPasswords () {
 		for file in $(ls $sshDirectory | grep -v .pub); do
 			result=$(ssh-keygen -y -P "" -f "$sshDirectory/$file" 2>&1)
 			if [[ $result =~ "incorrect passphrase" ]]; then
-				printf "\tNOT A FINDING: $sshDirectory/$file is password protected\n"
+				printResults "" "ADD" "Not a Finding: $sshDirectory/$file is password protected"
+				#printf "\tNOT A FINDING: $sshDirectory/$file is password protected\n"
 			elif [[ $result =~ "invalid format" ]]; then
 				echo -n ""
 			elif [[ $result =~ "ssh-" ]]; then
-				printf "\tFinding: $sshDirectory/$file is not password protected\n"
+				printResults "" "ADD" "Finding: $sshDirectory/$file is not password protected."
+				#printf "\tFinding: $sshDirectory/$file is not password protected\n"
 			elif [[ $result =~ "UNPROTECTED PRIVATE KEY FILE" ]]; then
-				printf "\tFinding: $sshDirectory/$file has incorrect file permissions\n"
+				printResults "" "ADD" "Finding: $sshDirectory/$file has incorrect file permissions"
+				#printf "\tFinding: $sshDirectory/$file has incorrect file permissions\n"
 			else
-				printf "\tPOTENTIAL FINDING: Output not recognized for $sshDirectory/$file. Verify manually.\n"
+				printResults "" "ADD" "Potential Finding: Output not recognized for $sshDirectory/$file. Verify manually."
+				#printf "\tPOTENTIAL FINDING: Output not recognized for $sshDirectory/$file. Verify manually.\n"
 			fi
 		done
 	done
@@ -174,10 +217,11 @@ checkCommandOutput () {
 	result=$($command 2>&1 | grep $key)
 	
 	if [[ $result =~ "$matchString" ]]; then
-		printf "Question Number $questionNumber: Not a Finding\n"
+		printResults "$questionNumber" "NFIND" ""
 	else
-		printf "Question Number $questionNumber: Finding\n"
-		printf "\tReason: The output of '$command' did not return the expected result '$matchString'\n\tThe result was '$result'\n"
+		printResults "$questionNumber" "FIND" "The output of '$command' did not return the expected result '$matchString'\n\tThe result was '$result'"
+		#printf "Question Number $questionNumber: Finding\n"
+		#printf "\tReason: The output of '$command' did not return the expected result '$matchString'\n\tThe result was '$result'\n"
 	fi
 }
 
@@ -202,42 +246,49 @@ checkFilePermissions () {
 	
 	if [[ $result ]]; then
 		if [ $failIfFound == "TRUE" ]; then
-			printf "Question Number $questionNumber: Finding\n"
-			printf "\tReason: One or more objects of type '$type' within directory '$startDirectory' were identified that $6\nMatching Objects:\n\t$result\n"
+			printResults "$questionNumber" "FIND" "One or more objects of type '$type' within directory '$startDirectory' were identified that $6\nMatching Objects:\n\t$result"
+			#printf "Question Number $questionNumber: Finding\n"
+			#printf "\tReason: One or more objects of type '$type' within directory '$startDirectory' were identified that $6\nMatching Objects:\n\t$result\n"
 		else
-			printf "Question Number $questionNumber: Not a Finding\n"
+			printResults "$questionNumber" "NFIND" ""
+			#printf "Question Number $questionNumber: Not a Finding\n"
 		fi
 	else #not found
 		if [ $failIfFound == "TRUE" ]; then
-			printf "Question Number $questionNumber: Not a Finding\n"
+			printResults "$questionNumber" "NFIND" ""
+			#printf "Question Number $questionNumber: Not a Finding\n"
 		else
-			printf "Question Number $questionNumber: Finding\n"
-			printf "\tReason: No objects of type '$type' within directory '$startDirectory' were identified that $6\n"
+			printResults "$questionNumber" "FIND" "No objects of type '$type' within directory '$startDirectory' were identified that $6"
+			#printf "Question Number $questionNumber: Finding\n"
+			#printf "\tReason: No objects of type '$type' within directory '$startDirectory' were identified that $6\n"
 		fi
 	fi
 }
 
-#TODO: Currently only checks via crontab. Need to include checks within /etc/cron.*
 checkCronjob () {
 	name=$1
 	questionNumber=$2
 	cronJobs=$(crontab -l | grep -v "#" | grep -i "$name")
 	if [ -x "$(command -v $name)" ]; then
-		printf "Question Number $questionNumber: Review the following and validate that the cronjobs are configured per organization standards\n$cronJobs\n"
+		printf "Question Number $questionNumber: Review the following and validate that the cronjobs are configured per organization standards\n"
 		if [[ $cronJobs ]]; then
-			printf "Cronjobs identified via crontab -l for the root user:\n\t$cronJobs\n"
+			printResults "" "ADD" "Cronjobs identified via crontab -l for the root user:\n\t$cronJobs"
+			#printf "Cronjobs identified via crontab -l for the root user:\n\t$cronJobs\n"
 		else
 			cronJobs=$(grep -rH $name /etc/cron.*)
 			if [[ $cronJobs ]]; then
-				printf "Cronjobs identified via via /etc/cron.* files:\n\t$cronJobs\n"
+				printResults "" "ADD" "Cronjobs identified via via /etc/cron.* files:\n\t$cronJobs"
+				#printf "Cronjobs identified via via /etc/cron.* files:\n\t$cronJobs\n"
 			else
-				printf "Question Number $questionNumber: Finding\n"
-				printf "\tReason: No cronjob for $name was found\n"
+				printResults "" "ADD" "Finding: No cronjob for $name was found" 
+				#printf "Question Number $questionNumber: Finding\n"
+				#printf "\tReason: No cronjob for $name was found\n"
 			fi
 		fi
 	else
-		printf "Question Number $questionNumber: Finding\n"
-		printf "\tReason: The binary $name does not appear to be installed or available in the current PATH variable\n"
+		printResults "$questionNumber" "FIND" "Finding: The binary $name does not appear to be installed or available in the current PATH variable"
+		#printf "Question Number $questionNumber: Finding\n"
+		#printf "\tReason: The binary $name does not appear to be installed or available in the current PATH variable\n"
 	fi
 	
 }
@@ -245,8 +296,8 @@ checkCronjob () {
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
 checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
-#checkUpdateHistory
-checkDriveEncryption
+#checkUpdateHistory "4"
+checkDriveEncryption "5"
 checkForBanner "banner" "/etc/ssh/sshd_config" "189" "6"
 checkSettingContains "banner-message-text" "/etc/dconf/db/local.d/*" "banner-message-text='You are accessing a U.S. Government (USG) Information System (IS)" "7"
 checkSettingContains "USG" "/etc/issue" "You are accessing a U.S. Government (USG) Information System (IS)" "8"
@@ -263,3 +314,4 @@ checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "-perm /022" "TRUE" "
 checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -user root" "TRUE" "19" "are not owned by root." "TRUE"
 checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -group root" "TRUE" "20" "are not group owned by root." "TRUE"
 checkCronjob "aide" "21"
+checkForSetting "certificate_verification" "/etc/sssd/" "22"
