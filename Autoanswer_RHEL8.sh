@@ -155,9 +155,9 @@ checkSettingContains () {
 	fi
 }
 
-unclearRequirementNeedtoRevist () {
+needtoRevist () {
 	questionNumber=$1
-	printResults "$questionNumber" "FIND" "The requirements for meeting this STIG aren't clear."
+	printResults "$questionNumber" "FIND" "The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear."
 }
 
 checkDODRootCA () {
@@ -224,7 +224,7 @@ checkCommandOutput () {
 	fi
 }
 
-# "startDirectory" "type" "permissions" "failIfFound" "questionNumber"
+# "startDirectory" "type" "permissions" "failIfFound" "questionNumber" "" "followSymLinks"
 checkFilePermissions () {
 	startDirectory=$1
 	type=$2
@@ -278,6 +278,43 @@ checkCronjob () {
 	
 }
 
+checkFileSystemTable () {
+	questionNumber=$1
+	searchTerm=$2
+	failIfFound=$3
+	reason2=$4
+	oldIFS=$IFS
+	IFS=$'\n'
+	results=$(grep -v "#" /etc/fstab)
+	printf "Question Number $questionNumber: Review the following file system mounts:\n"
+	if [ $failIfFound == "TRUE" ]; then
+		for result in $results; do
+			mountPoint=$(echo -n $result | awk '{print $2}')
+			fileSystemType=$(echo -n $result | awk '{print $3}')
+			if [[ $result =~ $searchTerm ]]; then
+				printResults "" "ADD" "Potential Finding: The option $searchTerm was found for mount '$mountPoint' of type '$fileSystemType'. $reason2"
+			else
+				printResults "" "ADD" "Not a Finding: The option $searchTerm was not found for mount '$mountPoint' of type '$fileSystemType'."
+			fi
+		done
+	else
+		for result in $results; do
+			mountPoint=$(echo -n $result | awk '{print $2}')
+			fileSystemType=$(echo -n $result | awk '{print $3}')
+			if [[ ! $result =~ $searchTerm ]]; then
+				printResults "" "ADD" "Potential Finding: The option $searchTerm was not found for mount '$mountPoint' of type '$fileSystemType'. $reason2"
+			else
+				printResults "" "ADD" "Not a Finding: The option $searchTerm was found for mount '$mountPoint' of type '$fileSystemType'."
+			fi
+		done
+	fi
+	
+	
+	IFS=$oldIFS
+
+}
+
+
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
 checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
@@ -286,7 +323,7 @@ checkDriveEncryption "5"
 checkForBanner "banner" "/etc/ssh/sshd_config" "189" "6"
 checkSettingContains "banner-message-text" "/etc/dconf/db/local.d/*" "banner-message-text='You are accessing a U.S. Government (USG) Information System (IS)" "7"
 checkSettingContains "USG" "/etc/issue" "You are accessing a U.S. Government (USG) Information System (IS)" "8"
-unclearRequirementNeedtoRevist "9"
+needtoRevist "9"
 checkDODRootCA "10"
 checkSSHKeyPasswords "11"
 checkCommandOutput "Enforcing" "getenforce" "Enforcing" "12"
@@ -300,7 +337,6 @@ checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -user root" "TRUE"
 checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "f" "! -group root" "TRUE" "20" "are not group owned by root." "TRUE"
 checkCronjob "aide" "21"
 checkForSetting "certificate_verification" "/etc/sssd/" "22"
-#"key" "command" "expected result" "questionNumber" "secondKey" "secondCommand" "secondMatchString"
 checkCommandOutput "PIV-II\s*" "opensc-tool --list-drivers" "Personal Identity Verification Card" "23"
 checkCommandOutput "NX\s.Execute\sDisble.\sprotection:\s" "dmesg" "active" "24" "nx" "cat /proc/cpuinfo" "nx"
 checkCommandOutput "page_poison=" "grub2-editenv list" "1" "25"
@@ -310,3 +346,13 @@ checkCommandOutput "slub_debug=" "grub2-editenv list" "P" "27a"
 checkForSetting "GRUB_CMDLINE_LINUX=\"slub_debug=P\"" "/etc/default/grub" "27b"
 checkSettingContains "/home" "/etc/fstab" "nosuid" "28" #may need to revist this one to consider home directories not mounted at /home
 checkSettingContains "/home" "/etc/fstab" "noexec" "29" #may need to revist this one to consider home directories not mounted at /home
+checkFileSystemTable "30" "nodev" "FALSE" "Confirm that this mounted file system does not refer to removable media."
+checkFileSystemTable "31" "noexec" "FALSE" "Confirm that this mounted file system does not refer to removable media."
+checkFileSystemTable "32" "nosuid" "FALSE" "Confirm that this mounted file system does not refer to removable media."
+needtoRevist "33"
+checkUnitFile "kdump.service" "masked" "1" "34"
+checkUnitFile "systemd-coredump.socket" "masked" "1" "35"
+needtoRevist "36"
+needtoRevist "37"
+checkFilePermissions "/" "d" "-perm -0002 -uid +999 -print" "TRUE" "38" "are world-writable and are not owned by a system account." "FALSE"
+checkFilePermissions "/" "d" "-perm -0002 -gid +999 -print" "TRUE" "39" "are world-writable and are not group owned by a system account." "FALSE"
