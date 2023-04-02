@@ -372,11 +372,36 @@ checkUserHomeDirPermissions () {
 	done
 	printf "$table" | column -t
 	IFS=$oldIFS
-
-
 }
 
+checkUserLocalInitialization () {
+	questionNumber=$1
+	oldIFS=$IFS
+	IFS=$'\n'
+	table="\tUser Directory Permission Owner Group\n"
+	printf "Question Number $questionNumber: Verify that all local initialization files for all users have a mode of '0740' or less.\n"
+	for userLine in $(cat /etc/passwd); do
+		userName=$(echo -n $userLine | awk -F':' '{print $1}')
+		userHomeDir=$(echo -n $userLine | awk -F':' '{print $6}')
+		if [[ ! $userHomeDir == "/" ]]; then
+			if [[ $(id -u $userName) -ge 0 ]]; then
+				if [ -d $userHomeDir ];  then
+					for file in $(find $userHomeDir -iname .[^.]* -type f -perm /0037); do
+						filePermissions=$(stat $file --printf "%n %a %U %G" 2>/dev/null)
+						table="$table$userName $filePermissions\n"
+					done
+				else
+					echo -n "" >/dev/null
+					#table="$table$userName HomeFolderDoesNotExist\n"
+				fi
+			fi
+		fi
+	done
+	printf "$table" | column -t
+	IFS=$oldIFS
+}
 
+<<com
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
 checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
@@ -422,4 +447,5 @@ checkUserHomeDirExists "40"
 checkUserHomeDirPermissions "41"
 checkUserHomeDirPermissions "42"
 checkUserHomeDirExists "43"
-
+com
+checkUserLocalInitialization "44"
