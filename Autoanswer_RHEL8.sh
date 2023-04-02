@@ -17,7 +17,7 @@ cd "$parent_path"
 PATH=$PATH:/usr/sbin
 
 #Get List of Local Users
-localUsers=$(cat /etc/passwd | grep -Ev "nologin|false|sync|shutdown|true|halt")
+localUsers=$(cat /etc/passwd | grep -Ev "nologin|false|sync|shutdown|true|halt" | awk -F ':' '{print $1}')
 
 
 #########FUNCTIONS##########
@@ -203,10 +203,10 @@ checkCommandOutput () {
 	matchString2=$7
 	result=$($command 2>&1 | grep -E $key)
 	
-	#echo $key
-	#echo $command
-	#echo $matchString
-	#echo $result
+	echo $key
+	echo $command
+	echo $matchString
+	echo $result
 	
 	if [[ $result =~ "$matchString" ]]; then
 		printResults "$questionNumber" "NFIND" ""
@@ -339,15 +339,17 @@ checkUserHomeDirPermissions () {
 	oldIFS=$IFS
 	IFS=$'\n'
 	table="\tUser Directory Permission Owner Group\n"
-	#correctPermissions="0750"
+	filter=""
 	case $questionNumber in
 		"41")
 			printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users has a mode of '0750' or less.\n"
+			#filter="-perm /027"
 			#printf "\tDirectory\tPermission\tOwner\tGroup\n"
 		;;
 		
 		"42")
 			printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users are owned by the local user.\n"
+			#filter=""
 			#printf "\tDirectory\tPermission\tOwner\tGroup\n"
 		;;
 		
@@ -401,6 +403,72 @@ checkUserLocalInitialization () {
 	IFS=$oldIFS
 }
 
+checkNonPrivUserHomeFileSystems () {
+	questionNumber=$1
+	oldIFS=$IFS
+	IFS=$'\n'
+	table="\tUser Directory Permission Owner Group\n"
+	printf "Question Number $questionNumber: Verify that all non-privileged user home directories are located on a separate file system/partition.\n"
+	for userLine in $(cat /etc/passwd); do
+		userName=$(echo -n $userLine | awk -F':' '{print $1}')
+		userHomeDir=$(echo -n $userLine | awk -F':' '{print $6}')
+		if [[ ! $userHomeDir == "/" ]]; then
+			if [[ $(id -u $userName) -ge 0 ]]; then
+				if [ -d $userHomeDir ];  then
+					fileSystem=$(df $userHomeDir --output="file,target,fstype,source" 2>/dev/null | tail -n 1)
+					table="$table$userName $fileSystem\n"
+				else
+					#echo -n "" >/dev/null
+					table="$table$userName HomeFolderDoesNotExist\n"
+				fi
+			fi
+		fi
+	done
+	printf "$table" | column -t
+	IFS=$oldIFS
+}
+
+
+checkUserAccountSetting () {
+	questionNumber=$1
+	settingToCheck=$2
+	case $settingToCheck in
+		"EXPIRATION")
+			printf "Question Number $questionNumber: Review the following password expiration information. If any temporary account has no expiration data set or does not expire within 72 hours, this is a finding.\n"
+			for user in $localUsers; do
+				expirationInfo=$(chage -l $user | grep -i "Account expires" | tr -d "\s\s")
+				printResults "" "ADD" "$user\t$expirationInfo"
+			done
+		;;
+		*)
+			echo "Error"
+			;;
+	esac
+}
+
+checkGnomeSetting () {
+	questionNumber=$1
+	settingToCheck=$2
+	case $settingToCheck in
+		"SESSIONLOCK")
+			result=$(gsettings get org.gnome.desktop.session idle-delay)
+			if [[ $result =~ "uint32" ]]; then
+				timeOut=$(echo -n $result | awk '{print $2}')
+				if [[ $timeOut -le 900 ]]; then
+					printResults "$questionNumber" "NFIND" ""
+				else
+					printResults "$questionNumber" "FIND" "The automatic session lock for GUI is set to $timeOut seconds which is greater than 15 minutes (900 seconds)."
+				fi
+			else
+				printResults "$questionNumber" "PFIND" "The automatic session lock for GUI is not defined. If the system does not have any graphical user interface installed, this requirement is Not Applicable."
+			fi
+		;;
+		*)
+			echo "Error"
+			;;
+	esac
+}
+
 <<com
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
@@ -449,3 +517,12 @@ checkUserHomeDirPermissions "42"
 checkUserHomeDirExists "43"
 com
 checkUserLocalInitialization "44"
+checkFilePermissions "/" "" "-nouser" "TRUE" "45" "do not have a valid owner." "FALSE"
+checkFilePermissions "/" "" "-nogroup" "TRUE" "46" "do not have a valid owner." "FALSE"
+checkNonPrivUserHomeFileSystems "47"
+checkUserAccountSetting "48" "EXPIRATION"
+needtoRevist "49"
+needtoRevist "50"
+checkCommandOutput "true" "gsettings get org.gnome.desktop.screensaver lock-enabled" "true" "51"
+checkForSetting "removal-action='lock-screen'" "/etc/dconf/db/*" "52"
+checkGnomeSetting "53" "SESSIONLOCK"
