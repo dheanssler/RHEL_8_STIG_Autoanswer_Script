@@ -598,7 +598,34 @@ checkSyslogEncryption () {
 	fi
 }
 
-<<com
+checkSyslogRemoteVerification () {
+	questionNumber=$1
+	actionSendStreamDriver=$(grep -v "#" /etc/rsyslog.conf /etc/rsyslog.d/*.conf 2> /dev/null | grep -i '$ActionSendStreamDriverAuthMode')
+	if [[ -n $actionSendStreamDriver ]]; then
+		if [[ ! $actionSendStreamDriver =~ "x509/name" ]]; then
+			printResults "$questionNumber" "FIND" "The Action Send Stream Driver Auth Mode isn't configured correctly. See configuration below:"
+			printResults "" "ADD" "Action Send Stream Driver Auth Mode: $actionSendStreamDriver"
+		fi
+	else
+		printResults "$questionNumber" "FIND" "The Action Send Stream Driver Auth Mode isn't configured."
+	fi
+}
+
+chronyChecks () {
+	questionNumber=$1
+	maxpoll=$(grep -v "#" /etc/chrony.conf | grep -o -e "maxpoll\s*[0-9]*" | awk '{print $2}')
+	if [[ -n $maxpoll ]]; then
+		if [[ $maxpoll -gt "16" ]]; then
+			printResults "$questionNumber" "FIND" "The maximum interval between time query requests sent to the server exceeds 24 hours. Maxpoll is configured to $maxpoll. Configure maxpoll to 16 or less."
+		else
+			printResults "$questionNumber" "NFIND"
+		fi	
+	else
+		printResults "$questionNumber" "FIND" "Maxpoll is not configured. Configure maxpoll to 16 or less."
+	fi
+}
+
+
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
 checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
@@ -664,7 +691,6 @@ checkUserAccountSetting "59" "EMERACCOUNT"
 needtoRevist "60"
 checkUserAccountSetting "61" "AUTHORIZED"
 checkUserAccountSetting "62" "UMASK"
-com
 checkShellUmask "63"
 checkForSetting "/var/log/cron" "/etc/rsyslog.conf" "64"
 checkSettingContains "postmaster:\s*root$" "/etc/aliases" "postmaster:" "65"
@@ -673,3 +699,5 @@ checkAideConfig "67" "/usr/sbin/auditctl /usr/sbin/auditd /usr/sbin/ausearch /us
 auditStorageSpace "68"
 checkSyslogConfig "69"
 checkSyslogEncryption "70"
+checkSyslogRemoteVerification "71"
+chronyChecks "72"
