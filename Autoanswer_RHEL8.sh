@@ -18,6 +18,10 @@ PATH=$PATH:/usr/sbin
 
 #Get List of Local Users
 localUsers=$(cat /etc/passwd | grep -Ev "nologin|false|sync|shutdown|true|halt" | awk -F ':' '{print $1}')
+allLocalUsers=$(cat /etc/passwd | awk -F ':' '{print $1}')
+
+#Get Red Hat Release Version
+release=$(grep -E -o "8\.[0-9]+" /etc/redhat-release)
 
 
 #########FUNCTIONS##########
@@ -440,6 +444,36 @@ checkUserAccountSetting () {
 				printResults "" "ADD" "$user\t$expirationInfo"
 			done
 		;;
+		"UNIQUEUSERID")
+			result=$(awk -F ":" 'list[$3]++{print $1, $3}' /etc/passwd)
+			if [[ -n $result ]]; then
+				printResults "$questionNumber" "FIND" "One or more accounts were identified that share the same User ID:\n$result"
+			else
+				printResults "$questionNumber" "NFIND" ""
+			fi
+		;;
+		"EMERACCOUNT")
+			printf "Question Number $questionNumber: Review the following password expiration information. If any emergency account has no expiration data set or does not expire within 72 hours, this is a finding.\n"
+			for user in $localUsers; do
+				expirationInfo=$(chage -l $user | grep -i "Account expires" | tr -d "\s\s")
+				printResults "" "ADD" "$user\t$expirationInfo"
+			done
+		;;
+		"AUTHORIZED")
+			printf "Question Number $questionNumber: Review the following accounts. If any account does not match existing approval documentation, this is a finding.\n"
+			for user in $allLocalUsers; do
+				printResults "" "ADD" "$user"
+			done
+		;;
+		"UMASK")
+			printf "Question Number $questionNumber: Review the following umask values for local interactive users. If any listed account has a umask value less restrictive than 0077, this is a finding.\n"
+			for user in $localUsers; do
+				result=$(su $user -c "umask")
+				if [[ $(umask) != "0077" ]] && [[ $(umask) != "077" ]]; then
+					printResults "" "ADD" "$user $result"
+				fi
+			done
+		;;
 		*)
 			echo "Error"
 			;;
@@ -467,6 +501,101 @@ checkGnomeSetting () {
 			echo "Error"
 			;;
 	esac
+}
+
+checkShellUmask () {
+	questionNumber=$1
+	numberOfLines=$(grep -i umask /etc/bashrc /etc/csh.cshrc /etc/profile | grep -v "#" | wc -l)
+	correctOccur=$(grep -i umask /etc/bashrc /etc/csh.cshrc /etc/profile | grep -v "#" | grep -c "077")
+	if [[ $numberOfLines != $correctOccur ]]; then
+		printResults "$questionNumber" "PFIND" "One or more umask values for an installed shell is not set to 077. If any listed shell has a umask value less restrictive than 077, this is a finding.\n"
+		printResults "" "ADD" "$(grep -i umask /etc/bashrc /etc/csh.cshrc /etc/profile | grep -v "#")"
+	else
+		printResults "$questionNumber" "NFIND" ""
+	fi
+}
+
+checkFailLockAuditing () {
+	questionNumber=$1
+	if [[ $release == "8.0" ]] || [[ $release == "8.1" ]]; then
+		dir=$(grep -v "#" /etc/pam.d/system-auth | grep -i pam_faillock.so | grep -o -e "dir\s*=\s*\S*\s*" | sed s/"dir\s*=\s*"//)
+		if [[ -z $dir ]]; then
+			printResults "$questionNumber" "FIND" "The path to the faillock directory is not defined or is commented out."
+		else
+			result=$(grep $dir /etc/audit/audit.rules)
+			if [[ -z $result ]]; then
+				printResults "$questionNumber" "FIND" "The path to the faillock directory is not being audited."
+			else
+				if [[ $result =~ "-w" ]] && [[ $result =~ "-p\s*wa" ]]; then
+					printResults "$questionNumber" "FIND" "The auditing settings for the faillock directory are incorrect.\n$result"
+				else
+					printResults "$questionNumber" "NFIND"
+				fi
+			fi
+		fi
+	else
+		dir=$(grep -v "#" /etc/security/faillock.conf | grep -o -e "dir\s*=\s*\S*\s*" | sed s/"dir\s*=\s*"//)
+		if [[ -z $dir ]]; then
+			printResults "$questionNumber" "FIND" "The path to the faillock directory is not defined or is commented out."
+		else
+			result=$(grep $dir /etc/audit/audit.rules)
+			if [[ -z $result ]]; then
+				printResults "$questionNumber" "FIND" "The path to the faillock directory is not being audited."
+			else
+				if [[ $result =~ "-w" ]] && [[ $result =~ "-p\s*wa" ]]; then
+					printResults "$questionNumber" "FIND" "The auditing settings for the faillock directory are incorrect.\n$result"
+				else
+					printResults "$questionNumber" "NFIND"
+				fi
+			fi
+		fi
+	fi
+}
+
+checkAideConfig () {
+	questionNumber=$1
+	sros=$2
+	
+	for sro in $sros; do
+		result=$(grep $sro /etc/aide.conf)
+		if [[ -n $result ]]; then
+			printResults "$questionNumber" "REVIEW" "Review the following configuration line to confirm that it matches the required configuration for the SRO $sro:\n$result"
+		else
+			printResults "$questionNumber" "FIND" "The SRO $sro was not found in the /etc/aide.conf file."
+		fi
+	done
+}
+
+auditStorageSpace () {
+	questionNumber=$1
+	dir=$(grep -o -e "log_file\s*=\s*\S*\s*" /etc/audit/auditd.conf | grep -o -e "/\S*\s*")
+	printResults "$questionNumber" "REVIEW" "Review the available free space on the partition where audit data is stored. The capacity of the partition must be large enough to store at least one week of audit records if the audit records are not immediately sent to the central audit record storage location. There should be at least 10 GB available.\n"
+	df -h $dir
+	printf "\n"
+}
+
+checkSyslogConfig () {
+	questionNumber=$1
+	results=$(grep -v "#" /etc/rsyslog.conf /etc/rsyslog.d/*.conf 2> /dev/null | grep @@)
+	if [[ -n $results ]]; then
+		printResults "$questionNumber" "REVIEW" "Verify that the remote logging server is receiving logs from this host. If the remote server is not configured correctly to receive logs from this host, this is a finding."
+	else
+		printResults "$questionNumber" "PFIND" "Rsyslog does not appear to be configured for remote logging. Ask the system administrator how the audit logs are off-loaded to a different system or media. If there is no evidence that the audit logs are being off-loaded to another system or media, this is a finding."
+	fi
+}
+
+checkSyslogEncryption () {
+	questionNumber=$1
+	defaultNetstreamDriver=$(grep -v "#" /etc/rsyslog.conf /etc/rsyslog.d/*.conf 2> /dev/null | grep -i '$DefaultNetstreamDriver')
+	sendStreamDriverMode=$(grep -v "#" /etc/rsyslog.conf /etc/rsyslog.d/*.conf 2> /dev/null | grep -i '$ActionSendStreamDriverMode')
+	if [[ -n $defaultNetstreamDriver ]] && [[ -n $sendStreamDriverMode ]]; then
+		if [[ ! $defaultNetstreamDriver =~ "gtls" ]] || [[ $sendStreamDriverMode != "1" ]]; then
+			printResults "$questionNumber" "FIND" "The Default Netstream Driver or Action Send Stream Driver Mode isn't configured correctly. See configuration below:"
+			printResults "" "ADD" "Default Netstream Driver: $defaultNetstreamDriver \t Action Send Stream Driver Mode: $sendStreamDriverMode"
+		fi
+	else
+		printResults "$questionNumber" "FIND" "The Default Netstream Driver or Action Send Stream Driver Mode isn't configured."
+	fi
 }
 
 <<com
@@ -515,7 +644,6 @@ checkUserHomeDirExists "40"
 checkUserHomeDirPermissions "41"
 checkUserHomeDirPermissions "42"
 checkUserHomeDirExists "43"
-com
 checkUserLocalInitialization "44"
 checkFilePermissions "/" "" "-nouser" "TRUE" "45" "do not have a valid owner." "FALSE"
 checkFilePermissions "/" "" "-nogroup" "TRUE" "46" "do not have a valid owner." "FALSE"
@@ -526,3 +654,22 @@ needtoRevist "50"
 checkCommandOutput "true" "gsettings get org.gnome.desktop.screensaver lock-enabled" "true" "51"
 checkForSetting "removal-action='lock-screen'" "/etc/dconf/db/*" "52"
 checkGnomeSetting "53" "SESSIONLOCK"
+#20230522
+checkForSetting "lock-after-time 900" "/etc/tmux.conf" "54"
+checkForSetting "/org/gnome/desktop/screensaver/lock-delay" "/etc/dconf/db/local.d/locks/*" "55"
+needtoRevist "56"
+checkUserAccountSetting "57" "UNIQUEUSERID"
+needtoRevist "58"
+checkUserAccountSetting "59" "EMERACCOUNT"
+needtoRevist "60"
+checkUserAccountSetting "61" "AUTHORIZED"
+checkUserAccountSetting "62" "UMASK"
+com
+checkShellUmask "63"
+checkForSetting "/var/log/cron" "/etc/rsyslog.conf" "64"
+checkSettingContains "postmaster:\s*root$" "/etc/aliases" "postmaster:" "65"
+checkFailLockAuditing "66"
+checkAideConfig "67" "/usr/sbin/auditctl /usr/sbin/auditd /usr/sbin/ausearch /usr/sbin/aureport /usr/sbin/autrace /usr/sbin/rsyslog /usr/sbin/augenrules"
+auditStorageSpace "68"
+checkSyslogConfig "69"
+checkSyslogEncryption "70"
