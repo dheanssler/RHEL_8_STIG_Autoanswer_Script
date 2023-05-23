@@ -47,6 +47,9 @@ printResults () {
 		"ADD")
 			printf "\t$reason\n"
 			;;
+		"NOTAPPLICABLE")
+			printf "Question Number $questionNumber: Not applicable.\n"
+			;;
 		*)
 			printf "ERROR"
 			;;
@@ -625,7 +628,223 @@ chronyChecks () {
 	fi
 }
 
+kernelModuleCheck () {
+	questionNumber=$1
+	modules=$2
+	failIfFound=$3
+	printResults "$questionNumber" "REVIEW" "Verify that all of the following checks for each module pass."
+	if [ $failIfFound == "TRUE" ]; then
+		for module in $modules; do
+			printf "Kernel Module Name: $module\n"
+			if grep $module /etc/modprobe.d/* | grep -q blacklist; then
+				printResults "$questionNumber" "ADD" "PASS: Kernel Module Blacklisted"
+			else
+				printResults "$questionNumber" "ADD" "FAIL: Kernel Module Not Blacklisted"
+			fi
+			
+			if grep $module /etc/modprobe.d/* | grep -q -E "/bin/true|/bin/false"; then
+				printResults "$questionNumber" "ADD" "PASS: Kernel Module is setup for false install"
+			else
+				printResults "$questionNumber" "ADD" "FAIL: Kernel Module is not setup for false install"
+			fi
+			
+			if lsmod | grep -q -i $module; then
+				printResults "$questionNumber" "ADD" "FAIL: Kernel Module is Currently Loaded"
+			else
+				printResults "$questionNumber" "ADD" "PASS: Kernel Module is not Currently Loaded"
+			fi
+			
+			if [ "$(systemctl is-enabled $module 2>/dev/null)" == disabled -o "$(systemctl is-enabled $module 2>/dev/null)" == "masked" ]; then
+				printResults "$questionNumber" "ADD" "PASS: Kernel Module is Masked or Disabled"
+			else
+				systemctl is-enabled $module 2> ./tmp
+				if echo "$(<./tmp)" | grep -q -i "No such file or directory"; then
+					printResults "$questionNumber" "ADD" "INFO: No Such Kernel Module Found"
+				else
+					printResults "$questionNumber" "ADD" "FAIL: Kernel Module is not Masked or Disabled"
+				fi
+			fi
+		done
+	elif [ $failIfFound == "FALSE" ]; then
+		for module in $modules; do
+			printf "Kernel Module Name: $module\n"
+			if grep -v "#" /etc/modprobe.d/* | grep $module | grep -q blacklist; then
+				printResults "$questionNumber" "ADD" "FAIL: Kernel Module Blacklisted"
+			else
+				printResults "$questionNumber" "ADD" "PASS: Kernel Module Not Blacklisted"
+			fi
+			
+			if grep -v "#" /etc/modprobe.d/* | grep $module | grep -q -E "/bin/true|/bin/false"; then
+				printResults "$questionNumber" "ADD" "FAIL: Kernel Module is setup for false install"
+			else
+				printResults "$questionNumber" "ADD" "PASS: Kernel Module is not setup for false install"
+			fi
+			
+			if lsmod | grep -q -i $module; then
+				printResults "$questionNumber" "ADD" "PASS: Kernel Module is Currently Loaded"
+			else
+				printResults "$questionNumber" "ADD" "FAIL: Kernel Module is not Currently Loaded"
+			fi
+			
+			if [ "$(systemctl is-enabled $module 2>/dev/null)" == disabled -o "$(systemctl is-enabled $module 2>/dev/null)" == "masked" ]; then
+				printResults "$questionNumber" "ADD" "FAIL: Kernel Module is Masked or Disabled"
+			else
+				systemctl is-enabled $module 2> ./tmp
+				if echo "$(<./tmp)" | grep -q -i "No such file or directory"; then
+					printResults "$questionNumber" "ADD" "INFO: No Such Kernel Module Found"
+				else
+					printResults "$questionNumber" "ADD" "PASS: Kernel Module is not Masked or Disabled"
+				fi
+			fi
+		done
+	fi
 
+}
+
+firewallCheck () {
+	questionNumber=$1
+	check=$2
+	firewallState=$(firewall-cmd --state)
+	if [[ "$firewallState" == "running" ]]; then
+		case $check in
+			"PPSM")
+				activeZones=$(firewall-cmd --get-active-zones)
+				results=$(firewall-cmd --list-all-zones)
+				printResults "$questionNumber" "REVIEW" "Verify that the services allowed by the firewall match the program Ports, Protocols, and Services Management Component Local Service Assessment (PPSM CLSA). If there are additional ports, protocols, or services that are not in the PPSM CLSA, or their are ports, protocols, or services that are prohibited by the PPSM Category Assurance List (CAL), this is a finding.\nActive Zones: $activeZones\nFirewall Rules:\n$results"
+			;;
+			"DEFAULTDENY")
+				activeZones=$(firewall-cmd --get-active-zones | grep -v -e "^\s")
+				if [[ -n $activeZones ]]; then
+					for zone in $activeZones; do
+						target=$(firewall-cmd --info-zone=$zone | grep -i "target")
+						if [[ $target =~ "target:\s*DROP" ]]; then
+							printResults "$questionNumber" "NFIND"
+						else
+							printResults "$questionNumber" "FIND" "Target is not set to DROP for this zone. Target is set to:'$target'"
+						fi
+					done
+				else
+					printResults "$questionNumber" "FIND" "No Active Firewall Zones"
+				fi
+			;;
+			"RATELIMIT")
+				firewallBackend=$(grep -v "#" /etc/firewalld/firewalld.conf | grep -i "firewallbackend" | sed s/"[Ff]irewall[Bb]ackend="//)
+				if [[ $firewallBackend =~ "nftables" ]]; then
+					printResults "$questionNumber" "NFIND"
+				else
+					printResults "$questionNumber" "FIND" "nftables is not set as the default backend for firewalld"
+				fi
+			;;
+			*)
+				echo "Error"
+			;;
+		esac
+	else
+		printResults "$questionNumber" "FIND" "Firewall is not running."
+	fi
+}
+
+packageInstalled() {
+	questionNumber=$1
+	package=$2
+	failIfFound=$3
+	installationStatus=$(yum list installed $package* -q | tail -n+2)
+	
+	if [ $failIfFound == "TRUE" ]; then
+		if [[ "$installationStatus" =~ "$package" ]]; then
+			printResults "$questionNumber" "FIND" "Package was found to be installed."
+			printResults "" "ADD" "Installed $package Package(s):\n$installationStatus"
+		else
+			printResults "$questionNumber" "NFIND"
+		fi
+	elif [ $failIfFound == "FALSE" ]; then
+		if [[ "$installationStatus" =~ "$package" ]]; then
+			printResults "$questionNumber" "NFIND"
+			printResults "" "ADD" "Installed $package Package(s):\n$installationStatus"
+		else
+			printResults "$questionNumber" "FIND" "$package isn't installed."
+		fi
+	fi
+}
+
+checkForWirelessDevices () {
+	questionNumber=$1
+	questionableDevices=$(nmcli device status | tail -n+2 | grep -v -i -E "(ethernet|bridge|loopback)")
+	if [[ -n $questionableDevices ]]; then
+		printResults "$questionNumber" "REVIEW" "The following devices are not of type Ethernet, Bridge, or Loopback. Verify that none of the listed devices are wireless devices:\n$questionableDevices"
+	else
+		printResults "$questionNumber" "NFIND"
+	fi
+
+}
+
+checkUSBGuard () {
+	questionNumber=$1
+	rules=$(usbguard list-rules)
+	if usbguard list-rules &>/dev/null; then
+		rules=$(usbguard list-rules)
+		printResults "$questionNumber" "REVIEW" "Review the following rules to verify that unauthorized peripherals are being blocked:\n$rules"
+	else
+		printResults "$questionNumber" "FIND" "USBGuard is not configured properly to block unauthorized peripherals."
+	fi
+}
+
+checkPromMode () {
+	questionNumber=$1
+	flaggedInterfaces=$(ip link | grep -i promisc)
+	if [[ -n $flaggedInterfaces ]]; then
+		printResults "$questionNumber" "PFIND" "The following network interfaces were found to be in promiscuous mode. If the use of these interfaces in promiscuous mode has not been documented and approved by the ISSO, this is a finding."
+	else
+		printResults "$questionNumber" "NFIND"
+	fi
+}
+
+biosUEFICheck () {
+	questionNumber=$1
+	check=$2
+	bootType=""
+	test=""
+	
+	if [[ -e /boot/efi/EFI/redhat/grub.cfg ]]; then
+		bootType="UEFI"
+	elif [[ -e /boot/grub2/grub.cfg ]]; then
+		bootType="BIOS"
+	else
+		bootType="BIOS"
+	fi
+	
+	if [[ $questionNumber == "86" ]] && [[ $bootType == "BIOS" ]]; then
+		check="NA"
+	elif [[ $questionNumber == "87" ]] && [[ $bootType == "UEFI" ]]; then
+		check="NA"
+	fi
+	
+	case $check in
+		"SUPERUSERS")
+			if [[ $bootType == "UEFI" ]]; then
+				superUsers=$(grep -i -e "set\ssuperusers=.*" /boot/efi/EFI/redhat/grub.cfg | grep -o "\".*\"" | tr -d \")
+			else
+				superUsers=$(grep -i -e "set\ssuperusers=.*" /boot/grub2/grub.cfg | grep -o "\".*\"" | tr -d \")
+			fi
+			printResults "$questionNumber" "REVIEW" "Review the following identified superusers. If any superuser name is identical to an OS account name, this is a finding"
+			for user in $superUsers; do
+				if [[ "$allLocalUsers" =~ .*"$user".* ]]; then
+					printResults "$questionNumber" "ADD" "FAIL: Superuser name $user is identical to an OS account name"
+				else
+					printResults "$questionNumber" "ADD" "PASS: Superuser name $user is not identical to an OS account name"
+				fi
+			done
+		;;
+		"NA")
+			printResults "$questionNumber" "NOTAPPLICABLE"
+		;;
+		*)
+			echo "Error"
+		;;
+	esac
+}
+
+<<com
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
 checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
@@ -701,3 +920,22 @@ checkSyslogConfig "69"
 checkSyslogEncryption "70"
 checkSyslogRemoteVerification "71"
 chronyChecks "72"
+kernelModuleCheck "73" "uvcvideo" "TRUE"
+firewallCheck "74" "PPSM"
+kernelModuleCheck "75" "autofs" "TRUE"
+
+#20230523
+firewallCheck "76" "DEFAULTDENY"
+packageInstalled "77" "firewalld" "FALSE"
+checkForWirelessDevices "78"
+packageInstalled "79" "fapolicyd" "FALSE"
+
+checkUSBGuard "80"
+firewallCheck "81" "RATELIMIT"
+kernelModuleCheck "82" "debug-shell" "TRUE"
+packageInstalled "83" "xorg-x11-server" "TRUE"
+com
+checkPromMode "84"
+checkForSetting "banner-message-enable=true" "/etc/dconf/db/local.d/*" "85"
+biosUEFICheck "86" "SUPERUSERS"
+biosUEFICheck "87" "SUPERUSERS"
