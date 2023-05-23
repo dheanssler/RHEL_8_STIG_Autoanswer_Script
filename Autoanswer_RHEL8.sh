@@ -929,13 +929,14 @@ firewallCheck "76" "DEFAULTDENY"
 packageInstalled "77" "firewalld" "FALSE"
 checkForWirelessDevices "78"
 packageInstalled "79" "fapolicyd" "FALSE"
-
 checkUSBGuard "80"
 firewallCheck "81" "RATELIMIT"
 kernelModuleCheck "82" "debug-shell" "TRUE"
 packageInstalled "83" "xorg-x11-server" "TRUE"
-com
 checkPromMode "84"
 checkForSetting "banner-message-enable=true" "/etc/dconf/db/local.d/*" "85"
 biosUEFICheck "86" "SUPERUSERS"
 biosUEFICheck "87" "SUPERUSERS"
+checkForSetting "ExecStart=-/usr/lib/systemd/systemd-sulogin-shell emergency" "/usr/lib/systemd/system/emergency.service" "88"
+checkSettingContains "password sufficient pam_unix.so" "/etc/pam.d/system-auth" "sha512" "89"
+com
