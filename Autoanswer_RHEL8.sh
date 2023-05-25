@@ -404,7 +404,6 @@ checkUserHomeDirPermissions () {
 		"41")
 			printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users has a mode of '0750' or less.\n"
 		;;
-		
 		"42")
 			printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users are owned by the local user.\n"
 		;;
@@ -420,7 +419,7 @@ checkUserHomeDirPermissions () {
 		userName=$(echo -n $userLine | awk -F':' '{print $1}')
 		userHomeDir=$(echo -n $userLine | awk -F':' '{print $6}')
 		if [[ ! $userHomeDir == "/" ]]; then
-			if [[ $(id -u $userName) -ge 1000 ]]; then
+			if [[ $(id -u $userName) -ge 1000 ]] || [[ $(id -u $userName) -eq 0 ]]; then
 				userHomeDirPermissions=$(stat $userHomeDir --printf "%n %a %U %G" 2>/dev/null)
 				if (( ! $? )); then
 					table="$table$userName $userHomeDirPermissions\n"
@@ -452,7 +451,6 @@ checkUserLocalInitialization () {
 					done
 				else
 					echo -n "" >/dev/null
-					#table="$table$userName HomeFolderDoesNotExist\n"
 				fi
 			fi
 		fi
@@ -492,7 +490,7 @@ checkUserAccountSetting () {
 	settingToCheck=$2
 	case $settingToCheck in
 		"EXPIRATION")
-			printf "Question Number $questionNumber: Review the following password expiration information. If any temporary account has no expiration data set or does not expire within 72 hours, this is a finding.\n"
+			printf "Question Number $questionNumber: Review the following password expiration information. If any temporary account has no expiration date set or does not expire within 72 hours, this is a finding.\n"
 			for user in $localUsers; do
 				expirationInfo=$(chage -l $user | grep -i "Account expires" | tr -d "\s\s")
 				printResults "" "ADD" "$user\t$expirationInfo"
@@ -954,7 +952,7 @@ sshCheck () {
 			terminationTimeout=$(grep -r -v "#" /etc/ssh/sshd_config* | grep -i "ClientAliveInterval" | grep -o -e "[0-9]*")
 			if [[ -n $terminationTimeout ]]; then
 				if [[ $terminationTimeout -gt 600 ]]; then
-					printResults "$questionNumber" "FIND" "Timeout is configured to 10 minutes or greater."
+					printResults "$questionNumber" "FIND" "Timeout is configured to $terminationTimeout which is greater than 10 minutes."
 				elif [[ $terminationTimeout -eq 0 ]]; then
 					printResults "$questionNumber" "FIND" "Timeout is disabled."
 				else
@@ -1086,7 +1084,51 @@ checkPasswordRequirements () {
 	
 }
 
+verifyLogging () {
+	questionNumber=$1
+	logEvents=$2
+	destinationLog=$3
+	printResults "$questionNumber" "REVIEW" "Review the following checks. If any check comes back as a FAIL, this is a finding."
+	for event in $logEvents; do
+		result=$(grep -v "#" /etc/rsyslog.conf | grep "$event")
+		event=$(printf $event | tr -d '\\')
+		if [[ -n $result ]]; then
+			if [[ $result =~ $destinationLog ]]; then
+				printResults "$questionNumber" "ADD" "PASS: The event $event is being logged by rsyslog to the log file '$destinationLog'."
+			else
+				printResults "$questionNumber" "ADD" "FAIL: The event $event is not being logged by rsyslog to the log file '$destinationLog'."
+			fi
+		else
+			printResults "$questionNumber" "ADD" "FAIL: The event $event is not being logged by rsyslog to any log file."
+		fi
+	done
+}
 
+worldWritableInitializationFiles () {
+	questionNumber=$1
+	oldIFS=$IFS
+	printResults "$questionNumber" "REVIEW" "Review the following list for any world-writable files referenced in user initialization scripts. If there are any FAILs, this is a finding."
+	IFS=$'\n'
+	partitions=$(grep -v "#" /etc/fstab | awk '{print $2}' | grep "/")
+	for partition in $partitions; do
+		worldWriteableFiles=$(find $partition -xdev -type f -perm -0002 -print)
+		if [[ -n $worldWriteableFiles ]]; then
+			for file in $worldWriteableFiles; do
+				isReferenced=$(grep -H "$file" /home/*/.* 2>/dev/null)
+				if [[ -n $isReferenced ]]; then
+					referencedFile=$(printf "$isReferenced" | awk -F ":" '{print $1}')
+					printResults "$questionNumber" "ADD" "FAIL: The world-writable file '$file' was found referenced in user initialization file '$referencedFile'"
+				fi
+			done
+		else
+			printf ""
+			#printResults "$questionNumber" "ADD" "PASS: No world-writable files found on partition $partition"
+		fi
+	done
+	IFS=$oldIFS
+}
+
+<<com
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2" "inactive"
 checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
@@ -1095,7 +1137,7 @@ checkDriveEncryption "5"
 checkForBanner "banner" "/etc/ssh/sshd_config" "189" "6"
 checkSettingContains "banner-message-text" "/etc/dconf/db/local.d/*" "banner-message-text='You are accessing a U.S. Government (USG) Information System (IS)" "7"
 checkSettingContains "USG" "/etc/issue" "You are accessing a U.S. Government (USG) Information System (IS)" "8"
-needtoRevist "9"
+verifyLogging "9" "auth.* authpriv.* daemon.*" "/var/log/secure"
 checkDODRootCA "10"
 checkSSHKeyPasswords "11"
 checkCommandOutput "Enforcing" "getenforce" "Enforcing" "12"
@@ -1121,7 +1163,7 @@ checkSettingContains "/home" "/etc/fstab" "noexec" "29" #may need to revist this
 checkFileSystemTable "30" "nodev" "FALSE" "Confirm that this mounted file system does not refer to removable media."
 checkFileSystemTable "31" "noexec" "FALSE" "Confirm that this mounted file system does not refer to removable media."
 checkFileSystemTable "32" "nosuid" "FALSE" "Confirm that this mounted file system does not refer to removable media."
-needtoRevist "33"
+worldWritableInitializationFiles "33"
 checkUnitFile "kdump.service" "masked" "1" "34" "inactive"
 checkUnitFile "systemd-coredump.socket" "masked" "1" "35" "inactive"
 needtoRevist "36"
@@ -1235,3 +1277,6 @@ needtoRevist "139"
 needtoRevist "140"
 needtoRevist "141"
 packageInstalled "142" "rng-tools" "FALSE"
+com
+verifyLogging "9" "auth\.\* authpriv\.\* daemon\.\*" "/var/log/secure"
+worldWritableInitializationFiles "33"
