@@ -220,13 +220,26 @@ checkCommandOutput () {
 			if [[ $result =~ "$matchString2" ]]; then
 				printResults "$questionNumber" "NFIND" ""
 			else
-				printResults "$questionNumber" "FIND" "The output of '$command' did not return the expected result '$key$matchString'\n\tThe result was '$result'"
+				printResults "$questionNumber" "PFIND" "The output of '$command' did not return the expected result '$key$matchString'\n\tThe result was '$result'"
 			fi
 		else
-			printResults "$questionNumber" "FIND" "The output of '$command' did not return the expected result '$key$matchString'\n\tThe result found was '$result'"
+			printResults "$questionNumber" "PFIND" "The output of '$command' did not return the expected result '$key$matchString'\n\tThe result found was '$result'"
 		fi
 		
 	fi
+}
+
+checkCommandOutputImproved () {
+		questionNumber=$1
+		command=$2
+		expectedOutput=$3
+		reason=$4
+		result=$($command 2>&1)
+		if [[ $result =~ $expectedOutput ]]; then
+			printResults "$questionNumber" "NFIND" ""
+		else
+			printResults "$questionNumber" "PFIND" "The output of '$command' did not return the expected result '$expectedOutput'. The result was '$result'. $reason"
+		fi		
 }
 
 # "startDirectory" "type" "permissions" "failIfFound" "questionNumber" "" "followSymLinks"
@@ -984,6 +997,95 @@ separatePartition () {
 	fi
 }
 
+checkPasswordRequirements () {
+	questionNumber=$1
+	case $questionNumber in
+	"126")
+		result=$(grep -E "password\s+required\s+pam_pwquality\.so" /etc/pam.d/system-auth)
+		if [[ -n $result ]]; then
+			printResults "$questionNumber" "NFIND"
+		else
+			printResults "$questionNumber" "FIND" "The operating system doesn't use 'pwquality' to enforce the password complexity rules."
+		fi
+	;;
+	"127")
+		if [[ $release == "8.0" ]] || [[ $release == "8.1" ]] || [[ $release == "8.2" ]] || [[ $release == "8.3" ]]; then
+			result=$(grep -E "password\s+required\s+pam_pwquality\.so\s+retry=" /etc/pam.d/system-auth)
+			if [[ -n $result ]]; then
+				retryCount=$(echo "$result" | grep -i -o -E "retry=[0-9]+" | grep -o -E "[0-9]+")
+				if [[ $retryCount == 0 ]]; then
+					printResults "$questionNumber" "FIND" "The password complexity module is set to unlimted retries."
+				elif [[ $retryCount -le 3 ]]; then
+					printResults "$questionNumber" "NFIND"
+				else
+					printResults "$questionNumber" "FIND" "The password complexity module is not configured to three retries or less."
+				fi
+			else
+				printResults "$questionNumber" "FIND" "The password complexity module is not configured to limit retries."
+			fi
+		else
+			printResults "$questionNumber" "NOTAPPLICABLE"
+		fi
+	;;
+	"128")
+		if [[ $release == "8.0" ]] || [[ $release == "8.1" ]] || [[ $release == "8.2" ]] || [[ $release == "8.3" ]]; then
+			result=$(grep -E "password\s+required\s+pam_pwquality\.so\s+retry=" /etc/pam.d/password-auth)
+			if [[ -n $result ]]; then
+				retryCount=$(echo "$result" | grep -i -o -E "retry=[0-9]+" | grep -o -E "[0-9]+")
+				if [[ $retryCount == 0 ]]; then
+					printResults "$questionNumber" "FIND" "The password complexity module is set to unlimted retries."
+				elif [[ $retryCount -le 3 ]]; then
+					printResults "$questionNumber" "NFIND"
+				else
+					printResults "$questionNumber" "FIND" "The password complexity module is not configured to three retries or less."
+				fi
+			else
+				printResults "$questionNumber" "FIND" "The password complexity module is not configured to limit retries."
+			fi
+		else
+			printResults "$questionNumber" "NOTAPPLICABLE"
+		fi
+	;;
+	"129")
+		if [[ $release == "8.0" ]] || [[ $release == "8.1" ]] || [[ $release == "8.2" ]] || [[ $release == "8.3" ]]; then
+			printResults "$questionNumber" "NOTAPPLICABLE"
+		else
+			result=$(grep -r -E "retry\s*=\s*" /etc/security/pwquality.conf* | grep -v "#")
+			lineCount=$(printf "$result" | wc -l)
+			if [[ $lineCount -gt 1 ]]; then
+				printResults "$questionNumber" "FIND" "Conflicting results for retry count."
+			elif [[ -n $result ]]; then
+				retryCount=$(echo "$result" | grep -i -o -E "retry\s*=\s*[0-9]+" | grep -o -E "[0-9]+")
+				if [[ $retryCount == 0 ]]; then
+					printResults "$questionNumber" "FIND" "The password complexity module is set to unlimted retries."
+				elif [[ $retryCount -le 3 ]]; then
+					printResults "$questionNumber" "NFIND"
+				else
+					printResults "$questionNumber" "FIND" "The password complexity module is not configured to three retries or less."
+				fi
+			else
+				printResults "$questionNumber" "FIND" "The password complexity module is not configured to limit retries."
+			fi
+		fi
+	;;
+	"130")
+		result=$(grep -i -E "password.*pam_pwhistory.so.*remember=" /etc/pam.d/system-auth | grep -v "#")
+		passwordHistory=$(echo "$result" | grep -i -o -E "remember\s*=\s*[0-9]+" | grep -o -E "[0-9]+")
+		if [[ $passwordHistory == 0 ]] || ! [[ -n $passwordHistory ]]; then
+			printResults "$questionNumber" "FIND" "The password history is disabled."
+		elif [[ $passwordHistory -lt 5 ]]; then
+			printResults "$questionNumber" "FIND" "The password history is set to remember $passwordHistory passwords which is less than 5 passwords."
+		else
+			printResults "$questionNumber" "NFIND"
+		fi
+	;;
+	*)
+		echo "Error."
+	;;
+	esac
+	
+}
+
 
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2" "inactive"
@@ -1115,3 +1217,21 @@ checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "d" "! -user root" "TRUE"
 checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "d" "! -group root" "TRUE" "122" "are not group owned by root." "FALSE"
 needtoRevist "123"
 needtoRevist "124"
+needtoRevist "125"
+checkPasswordRequirements "126"
+checkPasswordRequirements "127"
+checkPasswordRequirements "128"
+checkPasswordRequirements "129"
+checkPasswordRequirements "130"
+checkCommandOutputImproved "131" "systemctl get-default" "multi-user.target" "If the ISSO lacks a documented requirement for a graphical user interface, this is a finding."
+needtoRevist "132"
+checkForSetting "CRYPTO_POLICY='-oKexAlgorithms=ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512'" "/etc/crypto-policies/back-ends/opensshserver.config" "133"
+checkUnitFile "rngd" "enabled" "0" "134" "active"
+needtoRevist "135"
+needtoRevist "136"
+needtoRevist "137"
+needtoRevist "138"
+needtoRevist "139"
+needtoRevist "140"
+needtoRevist "141"
+packageInstalled "142" "rng-tools" "FALSE"
