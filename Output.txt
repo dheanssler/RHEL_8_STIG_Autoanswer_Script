@@ -4,10 +4,11 @@ Question Number 2: Not a Finding.
 Question Number 3: Not a Finding.
 Question Number 4: Review the following update history and confirm that updates are being performed in accordance with program requirements.
 Updating Subscription Management repositories.
-ID     | Command line                                       | Date and time    | Action(s)      | Altered
----------------------------------------------------------------------------------------------------------
-     2 |                                                    | 2023-03-25 14:15 | Install        |    1   
-     1 |                                                    | 2023-03-25 12:57 | Install        | 1413 EE
+ID     | Command line                                                                               | Date and time    | Action(s)      | Altered
+-------------------------------------------------------------------------------------------------------------------------------------------------
+     3 |                                                                                            | 2023-04-08 06:35 | I, U           |   84   
+     2 |                                                                                            | 2023-03-25 14:15 | Install        |    1   
+     1 |                                                                                            | 2023-03-25 12:57 | Install        | 1413 EE
 
 Question Number 5: Review the following block devices. Ask the system administrator about any devices indicated as not being encrypted. If there is no evidence that a partition or block device is encrypted, this is a finding. 
 	Not a Finding: /dev/mapper/rhel-root is encrypted with AES-256 bit encryption.
@@ -22,9 +23,9 @@ Question Number 5: Review the following block devices. Ask the system administra
 	Potential Finding: /dev/sda2 is not encrypted.
 	Potential Finding: /dev/mapper/luks-087b81af-e6e7-4de1-8f6b-aee0478d883e is not encrypted.
 	Potential Finding: /dev/mapper/luks-502a9547-d1f6-437f-a56b-3e64e400d19f is not encrypted.
-	Potential Finding: /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1 is not encrypted.
-	Potential Finding: /dev/mapper/luks-b5f7546f-1c35-45a2-995e-312e468c0e91 is not encrypted.
 	Potential Finding: /dev/mapper/luks-fcdb5eba-1efd-4f74-85c6-4f91ce390084 is not encrypted.
+	Potential Finding: /dev/mapper/luks-b5f7546f-1c35-45a2-995e-312e468c0e91 is not encrypted.
+	Potential Finding: /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1 is not encrypted.
 	Potential Finding: /dev/mapper/luks-51f923f0-7981-4111-9650-73d0688b9927 is not encrypted.
 	Potential Finding: /dev/mapper/luks-19407306-41ff-4797-8093-80c4fd39922a is not encrypted.
 	Potential Finding: /dev/mapper/luks-ff724e64-090b-41b5-b354-bcdb28c0ec42 is not encrypted.
@@ -43,7 +44,7 @@ Question Number 12: Not a Finding.
 Question Number 13: Finding
 	Reason: One or more objects of type 'd' within directory '/' were identified that are world-writable and do not have the sticky bit set.
 Matching Objects:
-	/home/redhat/test
+/home/redhat/test
 /home/test
 Question Number 14: Not a Finding.
 Question Number 15: Not a Finding.
@@ -53,19 +54,19 @@ Question Number 17: Finding
 Question Number 18: Finding
 	Reason: One or more objects of type 'f' within directory '/lib /lib64 /usr/lib /usr/lib64' were identified that are group or world-writable.
 Matching Objects:
-	/lib/mylib
+/lib/mylib
 /lib64/testlib64
 /usr/lib/mylib
 /usr/lib64/testlib64
 Question Number 19: Finding
 	Reason: One or more objects of type 'f' within directory '/lib /lib64 /usr/lib /usr/lib64' were identified that are not owned by root.
 Matching Objects:
-	/lib/mylib
+/lib/mylib
 /usr/lib/mylib
 Question Number 20: Finding
 	Reason: One or more objects of type 'f' within directory '/lib /lib64 /usr/lib /usr/lib64' were identified that are not group owned by root.
 Matching Objects:
-	/lib/.build-id/65/9888bf8e6fcb97955ea079b5a78280e5e8b653
+/lib/.build-id/65/9888bf8e6fcb97955ea079b5a78280e5e8b653
 /lib/.build-id/17/d904ce8506673ae7259126bd92fe0b90b6bdd5
 /lib/.build-id/6f/f5b3ceebc245f5d0d0b7eab0f06f3b5ad249d5
 /lib/.build-id/76/846adf833dd78ef2ae9f5c8b444b6760f9ad1a
@@ -123,6 +124,7 @@ Question Number 30: Review the following file system mounts:
 	Not a Finding: The option nodev was found for mount '/var/log/audit' of type 'xfs'.
 	Not a Finding: The option nodev was found for mount '/var/tmp' of type 'xfs'.
 	Potential Finding: The option nodev was not found for mount 'none' of type 'swap'. Confirm that this mounted file system does not refer to removable media.
+	Potential Finding: The option nodev was not found for mount '/mnt/KaliShare' of type 'cifs'. Confirm that this mounted file system does not refer to removable media.
 Question Number 31: Review the following file system mounts:
 	Potential Finding: The option noexec was not found for mount '/' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
 	Potential Finding: The option noexec was not found for mount '/boot' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
@@ -133,6 +135,7 @@ Question Number 31: Review the following file system mounts:
 	Not a Finding: The option noexec was found for mount '/var/log/audit' of type 'xfs'.
 	Not a Finding: The option noexec was found for mount '/var/tmp' of type 'xfs'.
 	Potential Finding: The option noexec was not found for mount 'none' of type 'swap'. Confirm that this mounted file system does not refer to removable media.
+	Potential Finding: The option noexec was not found for mount '/mnt/KaliShare' of type 'cifs'. Confirm that this mounted file system does not refer to removable media.
 Question Number 32: Review the following file system mounts:
 	Potential Finding: The option nosuid was not found for mount '/' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
 	Not a Finding: The option nosuid was found for mount '/boot' of type 'xfs'.
@@ -143,11 +146,12 @@ Question Number 32: Review the following file system mounts:
 	Not a Finding: The option nosuid was found for mount '/var/log/audit' of type 'xfs'.
 	Not a Finding: The option nosuid was found for mount '/var/tmp' of type 'xfs'.
 	Potential Finding: The option nosuid was not found for mount 'none' of type 'swap'. Confirm that this mounted file system does not refer to removable media.
+	Potential Finding: The option nosuid was not found for mount '/mnt/KaliShare' of type 'cifs'. Confirm that this mounted file system does not refer to removable media.
 Question Number 33: Finding
 	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
 Question Number 34: Not a Finding.
 Question Number 35: Finding
-	Reason: The unit file 'systemd-coredump.socket' was not masked.
+	Reason: The unit file 'systemd-coredump.socket' is static and active.
 
 Question Number 36: Finding
 	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
@@ -156,7 +160,7 @@ Question Number 37: Finding
 Question Number 38: Finding
 	Reason: One or more objects of type 'd' within directory '/' were identified that are world-writable and are not owned by a system account.
 Matching Objects:
-	/home/test
+/home/test
 /home/test
 Question Number 39: Not a Finding.
 Question Number 40: Review the following for users with non-existent home directories:
@@ -187,3 +191,648 @@ Question Number 43: Review the following for users with non-existent home direct
 	Potential Finding: The home directory '/nonexisting' for 'cockpit-wsinstance' doesn't exist. If this is an interactive user, this is a finding.
 	Potential Finding: The home directory '/run/gnome-initial-setup/' for 'gnome-initial-setup' doesn't exist. If this is an interactive user, this is a finding.
 	Finding: The home directory 'x' for 'jim' doesn't exist.
+Question Number 44: Verify that all local initialization files for all users have a mode of '0740' or less.
+User  Directory  Permission  Owner  Group
+Question Number 45: Not a Finding.
+Question Number 46: Not a Finding.
+Question Number 47: Verify that all non-privileged user home directories are located on a separate file system/partition.
+User                 Directory                Permission  Owner  Group
+root                 /root                    /           xfs    /dev/mapper/luks-087b81af-e6e7-4de1-8f6b-aee0478d883e
+bin                  /bin                     /           xfs    /dev/mapper/luks-087b81af-e6e7-4de1-8f6b-aee0478d883e
+daemon               /sbin                    /           xfs    /dev/mapper/luks-087b81af-e6e7-4de1-8f6b-aee0478d883e
+adm                  /var/adm                 /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+lp                   /var/spool/lpd           /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+sync                 /sbin                    /           xfs    /dev/mapper/luks-087b81af-e6e7-4de1-8f6b-aee0478d883e
+shutdown             /sbin                    /           xfs    /dev/mapper/luks-087b81af-e6e7-4de1-8f6b-aee0478d883e
+halt                 /sbin                    /           xfs    /dev/mapper/luks-087b81af-e6e7-4de1-8f6b-aee0478d883e
+mail                 /var/spool/mail          /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+operator             /root                    /           xfs    /dev/mapper/luks-087b81af-e6e7-4de1-8f6b-aee0478d883e
+games                /usr/games               /           xfs    /dev/mapper/luks-087b81af-e6e7-4de1-8f6b-aee0478d883e
+ftp                  /var/ftp                 /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+tss                  HomeFolderDoesNotExist                      
+unbound              /etc/unbound             /           xfs    /dev/mapper/luks-087b81af-e6e7-4de1-8f6b-aee0478d883e
+geoclue              /var/lib/geoclue         /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+clevis               HomeFolderDoesNotExist                      
+gluster              HomeFolderDoesNotExist                      
+rpc                  /var/lib/rpcbind         /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+avahi                /var/run/avahi-daemon    /run        tmpfs  tmpfs
+rtkit                /proc                    /proc       proc   proc
+pipewire             HomeFolderDoesNotExist                      
+pulse                HomeFolderDoesNotExist                      
+chrony               /var/lib/chrony          /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+setroubleshoot       /var/lib/setroubleshoot  /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+saslauth             HomeFolderDoesNotExist                      
+libstoragemgmt       /var/run/lsm             /run        tmpfs  tmpfs
+dnsmasq              /var/lib/dnsmasq         /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+fapolicyd            /var/lib/fapolicyd       /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+cockpit-ws           HomeFolderDoesNotExist                      
+cockpit-wsinstance   HomeFolderDoesNotExist                      
+colord               /var/lib/colord          /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+rpcuser              /var/lib/nfs             /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+gdm                  /var/lib/gdm             /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+gnome-initial-setup  HomeFolderDoesNotExist                      
+sshd                 /var/empty/sshd          /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+postfix              /var/spool/postfix       /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
+redhat               /home/redhat             /home       xfs    /dev/mapper/luks-ff724e64-090b-41b5-b354-bcdb28c0ec42
+jim                  HomeFolderDoesNotExist                      
+Question Number 48: Review the following password expiration information. If any temporary account has no expiration data set or does not expire within 72 hours, this is a finding.
+	root	Account expire						: never
+	redhat	Account expire						: never
+	jim	Account expire						: never
+Question Number 49: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 50: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 51: Not a Finding.
+Question Number 52: Finding
+	Reason: The setting 'removal-action='lock-screen'' was not found in the configuration file '/etc/dconf/db/*'.
+Question Number 53: Finding
+	Reason: The automatic session lock for GUI is set to 9000 seconds which is greater than 15 minutes (900 seconds).
+Question Number 54: Finding
+	Reason: The setting 'lock-after-time 900' was not found in the configuration file '/etc/tmux.conf'.
+Question Number 55: Finding
+	Reason: The setting '/org/gnome/desktop/screensaver/lock-delay' was not found in the configuration file '/etc/dconf/db/local.d/locks/*'.
+Question Number 56: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 57: Not a Finding.
+Question Number 58: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 59: Review the following password expiration information. If any emergency account has no expiration data set or does not expire within 72 hours, this is a finding.
+	root	Account expire						: never
+	redhat	Account expire						: never
+	jim	Account expire						: never
+Question Number 60: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 61: Review the following accounts. If any account does not match existing approval documentation, this is a finding.
+	root
+	bin
+	daemon
+	adm
+	lp
+	sync
+	shutdown
+	halt
+	mail
+	operator
+	games
+	ftp
+	nobody
+	dbus
+	tss
+	systemd-coredump
+	systemd-resolve
+	unbound
+	geoclue
+	qemu
+	clevis
+	usbmuxd
+	gluster
+	rpc
+	avahi
+	polkitd
+	rtkit
+	pipewire
+	pulse
+	chrony
+	setroubleshoot
+	saslauth
+	libstoragemgmt
+	dnsmasq
+	fapolicyd
+	cockpit-ws
+	cockpit-wsinstance
+	sssd
+	flatpak
+	colord
+	rpcuser
+	gdm
+	gnome-initial-setup
+	sshd
+	postfix
+	tcpdump
+	redhat
+	jim
+Question Number 62: Review the following umask values for local interactive users. If any listed account has a umask value less restrictive than 0077, this is a finding.
+	root 0022
+	redhat 0022
+	jim 0022
+Question Number 63: Potential Finding: One or more umask values for an installed shell is not set to 077. If any listed shell has a umask value less restrictive than 077, this is a finding.
+
+	/etc/bashrc:       umask 002
+/etc/bashrc:       umask 022
+/etc/csh.cshrc:    umask 002
+/etc/csh.cshrc:    umask 022
+/etc/profile:    umask 002
+/etc/profile:    umask 022
+Question Number 64: Not a Finding.
+Question Number 65: Not a Finding.
+Question Number 66: Finding
+	Reason: The path to the faillock directory is not defined or is commented out.
+Question Number 67: Finding
+	Reason: The SRO /usr/sbin/auditctl was not found in the /etc/aide.conf file.
+Question Number 67: Finding
+	Reason: The SRO /usr/sbin/auditd was not found in the /etc/aide.conf file.
+Question Number 67: Finding
+	Reason: The SRO /usr/sbin/ausearch was not found in the /etc/aide.conf file.
+Question Number 67: Finding
+	Reason: The SRO /usr/sbin/aureport was not found in the /etc/aide.conf file.
+Question Number 67: Finding
+	Reason: The SRO /usr/sbin/autrace was not found in the /etc/aide.conf file.
+Question Number 67: Finding
+	Reason: The SRO /usr/sbin/rsyslog was not found in the /etc/aide.conf file.
+Question Number 67: Finding
+	Reason: The SRO /usr/sbin/augenrules was not found in the /etc/aide.conf file.
+Question Number 68: Review the available free space on the partition where audit data is stored. The capacity of the partition must be large enough to store at least one week of audit records if the audit records are not immediately sent to the central audit record storage location. There should be at least 10 GB available.
+
+Filesystem                                             Size  Used Avail Use% Mounted on
+/dev/mapper/luks-51f923f0-7981-4111-9650-73d0688b9927  4.0G   73M  4.0G   2% /var/log/audit
+
+Question Number 69: Potential Finding: Rsyslog does not appear to be configured for remote logging. Ask the system administrator how the audit logs are off-loaded to a different system or media. If there is no evidence that the audit logs are being off-loaded to another system or media, this is a finding.
+Question Number 70: Finding
+	Reason: The Default Netstream Driver or Action Send Stream Driver Mode isn't configured.
+Question Number 71: Finding
+	Reason: The Action Send Stream Driver Auth Mode isn't configured.
+Question Number 72: Finding
+	Reason: Maxpoll is not configured. Configure maxpoll to 16 or less.
+Question Number 73: Verify that all of the following checks for each module pass.
+Kernel Module Name: uvcvideo
+	FAIL: Kernel Module Not Blacklisted
+	FAIL: Kernel Module is not setup for false install
+	PASS: Kernel Module is not Currently Loaded
+	INFO: No Such Kernel Module Found
+Question Number 74: Verify that the services allowed by the firewall match the program Ports, Protocols, and Services Management Component Local Service Assessment (PPSM CLSA). If there are additional ports, protocols, or services that are not in the PPSM CLSA, or their are ports, protocols, or services that are prohibited by the PPSM Category Assurance List (CAL), this is a finding.
+Active Zones: libvirt
+  interfaces: virbr0
+public
+  interfaces: eth0
+Firewall Rules:
+block
+  target: %REJECT%
+  icmp-block-inversion: no
+  interfaces: 
+  sources: 
+  services: 
+  ports: 
+  protocols: 
+  forward: no
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+dmz
+  target: default
+  icmp-block-inversion: no
+  interfaces: 
+  sources: 
+  services: ssh
+  ports: 
+  protocols: 
+  forward: no
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+drop
+  target: DROP
+  icmp-block-inversion: no
+  interfaces: 
+  sources: 
+  services: 
+  ports: 
+  protocols: 
+  forward: no
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+external
+  target: default
+  icmp-block-inversion: no
+  interfaces: 
+  sources: 
+  services: ssh
+  ports: 
+  protocols: 
+  forward: no
+  masquerade: yes
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+home
+  target: default
+  icmp-block-inversion: no
+  interfaces: 
+  sources: 
+  services: cockpit dhcpv6-client mdns samba-client ssh
+  ports: 
+  protocols: 
+  forward: no
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+internal
+  target: default
+  icmp-block-inversion: no
+  interfaces: 
+  sources: 
+  services: cockpit dhcpv6-client mdns samba-client ssh
+  ports: 
+  protocols: 
+  forward: no
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+libvirt (active)
+  target: ACCEPT
+  icmp-block-inversion: no
+  interfaces: virbr0
+  sources: 
+  services: dhcp dhcpv6 dns ssh tftp
+  ports: 
+  protocols: icmp ipv6-icmp
+  forward: no
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 
+	rule priority="32767" reject
+
+nm-shared
+  target: ACCEPT
+  icmp-block-inversion: no
+  interfaces: 
+  sources: 
+  services: dhcp dns ssh
+  ports: 
+  protocols: icmp ipv6-icmp
+  forward: no
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 
+	rule priority="32767" reject
+
+public (active)
+  target: default
+  icmp-block-inversion: no
+  interfaces: eth0
+  sources: 
+  services: cockpit dhcpv6-client ssh
+  ports: 
+  protocols: 
+  forward: no
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+trusted
+  target: ACCEPT
+  icmp-block-inversion: no
+  interfaces: 
+  sources: 
+  services: 
+  ports: 
+  protocols: 
+  forward: no
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+work
+  target: default
+  icmp-block-inversion: no
+  interfaces: 
+  sources: 
+  services: cockpit dhcpv6-client ssh
+  ports: 
+  protocols: 
+  forward: no
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 
+Question Number 75: Verify that all of the following checks for each module pass.
+Kernel Module Name: autofs
+	FAIL: Kernel Module Not Blacklisted
+	FAIL: Kernel Module is not setup for false install
+	PASS: Kernel Module is not Currently Loaded
+	INFO: No Such Kernel Module Found
+Question Number 76: Finding
+	Reason: Target is not set to DROP for this zone. Target is set to:'  target: ACCEPT'
+Question Number 76: Finding
+	Reason: Target is not set to DROP for this zone. Target is set to:'  target: default'
+Question Number 77: Not a Finding.
+	Installed firewalld Package(s):
+firewalld.noarch                0.9.3-13.el8      @rhel-8-for-x86_64-baseos-rpms
+firewalld-filesystem.noarch     0.9.3-13.el8      @rhel-8-for-x86_64-baseos-rpms
+Question Number 78: Not a Finding.
+Question Number 79: Not a Finding.
+	Installed fapolicyd Package(s):
+fapolicyd.x86_64            1.1.3-8.el8_7.1    @rhel-8-for-x86_64-appstream-rpms
+fapolicyd-selinux.noarch    1.1.3-8.el8_7.1    @rhel-8-for-x86_64-appstream-rpms
+Question Number 80: Finding
+	Reason: USBGuard is not configured properly to block unauthorized peripherals.
+Question Number 81: Not a Finding.
+Question Number 82: Verify that all of the following checks for each module pass.
+Kernel Module Name: debug-shell
+	FAIL: Kernel Module Not Blacklisted
+	FAIL: Kernel Module is not setup for false install
+	PASS: Kernel Module is not Currently Loaded
+	PASS: Kernel Module is Masked or Disabled
+Question Number 83: Finding
+	Reason: Package was found to be installed.
+	Installed xorg-x11-server Package(s):
+xorg-x11-server-Xorg.x86_64     1.20.11-9.el8  @rhel-8-for-x86_64-appstream-rpms
+xorg-x11-server-Xwayland.x86_64 21.1.3-6.el8   @rhel-8-for-x86_64-appstream-rpms
+xorg-x11-server-common.x86_64   1.20.11-9.el8  @rhel-8-for-x86_64-appstream-rpms
+xorg-x11-server-utils.x86_64    7.7-27.el8     @rhel-8-for-x86_64-appstream-rpms
+Question Number 84: Not a Finding.
+Question Number 85: Not a Finding.
+Question Number 86: Not applicable.
+Question Number 87: Review the following identified superusers. If any superuser name is identical to an OS account name, this is a finding
+	FAIL: Superuser name root is identical to an OS account name
+Question Number 88: Not a Finding.
+Question Number 89: Not a Finding.
+Question Number 90: Finding
+	Reason: Timeout is configured to 10 minutes or greater.
+Question Number 91: Not a Finding.
+Question Number 92: Finding
+	Reason: GSSAPI Authentication is either commented out, not defined, or configured to a value other than 'no'.
+Question Number 93: Not a Finding.
+Question Number 94: Not applicable.
+Question Number 95: Finding
+	Reason: One or more objects of type 'f' within directory '/home/' were identified that have a mode more permissive than 0750
+Matching Objects:
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/1
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/2
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/3
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/4
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/5
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/6
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/7
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/8
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/9
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/10
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/11
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/12
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/13
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/14
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/15
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/16
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/17
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/18
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/19
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/20
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/21
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/22
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/23
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/24
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/25
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/26
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/27
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/28
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/29
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/30
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/31
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/32
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/33
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/34
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/35
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/36
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/37
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/38
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/39
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/40
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/41
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/42
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/43
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/idb/3870112724rsegmnoittet-es.files/44
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/default/https+++www.redhat.com/ls/usage
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/default/https+++www.google.com/ls/usage
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/datareporting/glean/events/events
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/datareporting/glean/pending_pings/f99732dc-9e7b-4ba6-bbff-549b5e06e835
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/datareporting/glean/pending_pings/09e1bb38-f09d-4c63-b907-6084e1445cba
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/datareporting/glean/pending_pings/ed7b6f1e-896e-4de8-adc1-0bf3b90a34e9
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/datareporting/glean/pending_pings/e9f0a3f7-e3f9-44ec-a62c-3e24b234f5cc
+/home/redhat/.mozilla/firefox/ccgwe29l.default-default/datareporting/glean/pending_pings/87704b45-d214-4de6-9467-0417c7009c92
+/home/redhat/.cache/mesa_shader_cache/index
+/home/redhat/.cache/mesa_shader_cache/dc/6846cf6494db539bab10585726d986cd4421e2
+/home/redhat/.cache/mesa_shader_cache/92/c869cde1910fd551f3599c25d5e8a54bec5e2a
+/home/redhat/.cache/mesa_shader_cache/be/5a90dfe33c768343c3a2acea3512781f39de64
+/home/redhat/.cache/mesa_shader_cache/13/96142a837e8a9bfd443bc91a6f7638b95989b4
+/home/redhat/.cache/mesa_shader_cache/13/e5e17f7277b859813f452708378107adef5a90
+/home/redhat/.cache/mesa_shader_cache/e5/7e1aea0a3e9d552bc6be2a4c1cbfc6e323bc2d
+/home/redhat/.cache/mesa_shader_cache/1e/e20d4e013720ecda2be4939aea5e65fb828703
+/home/redhat/.cache/mesa_shader_cache/1e/9f2031ed26755000684dcc9b68e41daf7acd3f
+/home/redhat/.cache/mesa_shader_cache/87/9025c4bf5667e61f57d40e5f053db4e2be5669
+/home/redhat/.cache/mesa_shader_cache/c6/94cc5f3db99c1966e4aa0135498498477b3c55
+/home/redhat/.cache/mesa_shader_cache/fc/2e0adc287e58b90e20e61e6b1d5945b7b417ef
+/home/redhat/.cache/mesa_shader_cache/83/f20d4b4333898eefb461531d1894ff0cf4ba02
+/home/redhat/.cache/mesa_shader_cache/15/234c00878840ca477cb910f0abcf4d073f56f0
+/home/redhat/.cache/mesa_shader_cache/15/72b3036298b0a96c7ebbdbf0a2d69575f7ab30
+/home/redhat/.cache/mesa_shader_cache/0a/ef4e6f468634416f795275425fd5c67f7f8ce2
+/home/redhat/.cache/mesa_shader_cache/01/32717f8a7e9537d3f9e2f7462620a72deeabff
+/home/redhat/.cache/mesa_shader_cache/b2/bda56d23780bf62e9e74d56afef5e221e8b2d6
+/home/redhat/.cache/mesa_shader_cache/59/2c2f34977d21f3014d95fab8117fb4f748031c
+/home/redhat/.cache/mesa_shader_cache/0f/0d33412482b76b92450f5cca7ac9fb040cc69c
+/home/redhat/.cache/mesa_shader_cache/0f/3f24e3f281c73fc20038d2eea45cd131f63a13
+/home/redhat/.cache/mesa_shader_cache/60/b267b705bdf84643d75f2b1a20fdf32de24790
+/home/redhat/.cache/mesa_shader_cache/99/8a98683707e395e6760f417216e7ad2118752c
+/home/redhat/.cache/mesa_shader_cache/99/4b2b2a8a11ce3458a59e504a24603e77c4d0c8
+/home/redhat/.cache/mesa_shader_cache/d8/bc84df99169fdcfa6496230bf1916f8f87c535
+/home/redhat/.cache/mesa_shader_cache/d8/626da578b71ebe31a7c6be154ca1d51dcf1cce
+/home/redhat/.cache/mesa_shader_cache/40/86a8624677ee0e27161843ebc9d690604c92a3
+/home/redhat/.cache/mesa_shader_cache/b3/8c6b3d8bf0e715e42b487f5433f08b034c15a7
+/home/redhat/.cache/mesa_shader_cache/b8/7d862879d0fe5a5e189ccd3f47cd531e3e9ba4
+/home/redhat/.cache/mesa_shader_cache/0b/36acd1823102dfdcbd12984cafa4293d6dd8ae
+/home/redhat/.cache/mesa_shader_cache/dd/ea219f9ab1040179a2c20119d9e1206724a56a
+/home/redhat/.cache/mesa_shader_cache/e3/67547279d31f9c99a2d8d4c2e69e7cb7604d65
+/home/redhat/.cache/mesa_shader_cache/76/7c32b818b5359d0ae1b242dc7f2c7add54c80d
+/home/redhat/.cache/mesa_shader_cache/88/9e537283b3becbb7b33ef19ec73d3f96f07b35
+/home/redhat/.cache/mesa_shader_cache/ad/6bb565fb8b84da9e0ebf7e46662236566bd16a
+/home/redhat/.cache/mesa_shader_cache/fe/fb150d29692681fbed515ccb1542e72621612b
+/home/redhat/.cache/mesa_shader_cache/e7/7e8e76e31c724873168cb2b3ed3e419c3c3657
+/home/redhat/.cache/mesa_shader_cache/56/e9150b51368d07d03903c1cd70505e79feb128
+/home/redhat/.cache/mesa_shader_cache/84/b760d119a8756498c04eaec9be8ed1f0309463
+/home/redhat/.cache/mesa_shader_cache/3f/126a5a86d400e5a05f3436c0efd9ae741d2ce9
+/home/redhat/.cache/mesa_shader_cache/b4/a2c334108532be9ba85d136daa0105783752d3
+/home/redhat/.cache/mesa_shader_cache/b4/d73adf4ecc10eb194297745839f9ff26a0e0e5
+/home/redhat/.cache/mesa_shader_cache/6e/4a81b066fb374eff934f2c2fe9db752a94cb0d
+/home/redhat/.cache/mesa_shader_cache/90/7815e068e558a384bd03183f4cac81bbbede9c
+/home/redhat/.cache/mesa_shader_cache/90/269ad4ae42249e1ef8058fda16d577083615e2
+/home/redhat/.cache/mesa_shader_cache/32/0cf7fb50cfc9cd2bdc55625365e3aa2f0e70d3
+/home/redhat/.cache/mesa_shader_cache/11/0b20de2b1bff74905f1e2423a7ccf6fa167f71
+/home/redhat/.cache/mesa_shader_cache/11/c1a89b093c91921c68f91cd147e4b403dd38b4
+/home/redhat/.cache/mesa_shader_cache/4f/2267fefd6b2e2bbebee75470fd29ea3e687b9d
+/home/redhat/.cache/mesa_shader_cache/4f/0f5e0f3273631dbd5d6e1c6265722b08f57822
+/home/redhat/.cache/mesa_shader_cache/3b/cefefb2df019cfb6253e684e6b4c72d88234ed
+/home/redhat/.cache/mesa_shader_cache/0d/9c9fd3bacb613b7528144730b2d5c07b690d1a
+/home/redhat/.cache/mesa_shader_cache/c7/74a0b95868e4780c3913bd8aafa2192ae5b367
+/home/redhat/.cache/mesa_shader_cache/9a/56a505deaa8a11feac62e77489838abe96db1d
+/home/redhat/.cache/mesa_shader_cache/9a/9ead4201023417815784c1908dcc10cc005538
+/home/redhat/.cache/mesa_shader_cache/c5/07fd5ff6f7e003fcce748ad941f3bb31ef4706
+/home/redhat/.cache/mesa_shader_cache/36/75f9e37d9102fdd525cbdc78b2f3e7f159fa5e
+/home/redhat/.cache/mesa_shader_cache/95/89a853a39d5d4f28c76f4c222e39ca5a38aed6
+/home/redhat/.cache/mesa_shader_cache/db/5980a1d07b62ca0accba6f54b5c34e850628bf
+/home/redhat/.cache/mesa_shader_cache/35/d76d9eb79a19d5174dfafd1454ca5b985033a9
+/home/redhat/.cache/mesa_shader_cache/cc/78d74488f1759ec7952ebabec168cfcd477527
+/home/redhat/.cache/mesa_shader_cache/10/0156933b299d0c68e342ac9a5ecde0f46b4059
+/home/redhat/.cache/mesa_shader_cache/52/2d3b7c13f7530c3162db4f2389acc6871b3e92
+/home/redhat/.cache/mesa_shader_cache/3c/426c5120f4da280723debe8697198a9cef390e
+/home/redhat/.cache/mesa_shader_cache/85/83c2c3fdf02873298b3355e8bfcab1650de987
+/home/redhat/.cache/mesa_shader_cache/da/3dd936d8890de5cbc5a16e8f725d16365252b2
+/home/redhat/.cache/mesa_shader_cache/80/955d9daa490a6d9c5300d6802ff6c22ce4ffce
+/home/redhat/.cache/mesa_shader_cache/cd/ec0a89f6ddde3b9495d4380937cbfe626e9191
+/home/redhat/.cache/mesa_shader_cache/41/14e70a91056ebd8d35999ef5cee9b6cc94153b
+/home/redhat/.cache/mesa_shader_cache/82/1b9fc48c5ac69b4ce9dcf8332b375af5d71e74
+/home/redhat/.cache/mesa_shader_cache/62/ae0cc8f116197b504316e78158ba224ca2a753
+/home/redhat/.cache/mesa_shader_cache/c2/39378eb979d632807b950dfcea159997bd764a
+/home/redhat/.cache/mesa_shader_cache/c1/be0a74f4fd368685255e24752e644d6b0975dd
+/home/redhat/.cache/mesa_shader_cache/c1/b4993f56ca631ddff4371d155cc08251f00a89
+/home/redhat/.cache/mesa_shader_cache/49/fb73ae029b5129da781fbe633f9a4cf5d3781e
+/home/redhat/.cache/mesa_shader_cache/ed/cd82b91e36666f7f352359894697e193ef5876
+/home/redhat/.cache/mesa_shader_cache/89/35d4c7ff4057e6b3199b7a98da0a7641170278
+/home/redhat/.cache/mesa_shader_cache/29/7c095be630f8415d186b1e969165ffac36907c
+/home/redhat/.cache/mesa_shader_cache/a3/302a81e21363a8888afb37427f21436b57da3c
+/home/redhat/.cache/mesa_shader_cache/e4/ed59d654c4cfe61ddec78deba4aaa33df1b51f
+/home/redhat/.cache/mesa_shader_cache/c0/4e8382e85c0f7993420c6fdd4c6dcfb2738117
+/home/redhat/.cache/mesa_shader_cache/07/d7e750132239a081f75c5fba08e0b4c5cd2875
+/home/redhat/.cache/mesa_shader_cache/21/f237e5efd6622366c9950ed2240410313f6c44
+/home/redhat/.cache/mesa_shader_cache/a5/0b19cceb409ef0a36a8056651b47c835da5071
+/home/redhat/.cache/mesa_shader_cache/6f/06de22767cbccb6f7c4aadb562d7db07c2f8d9
+/home/redhat/.cache/mesa_shader_cache/4c/2cdb78f9a9d6792ecc66b4026b63f7032f72d4
+/home/redhat/.cache/mesa_shader_cache/08/a03215182b033febbd39ff54fdb38b883c3c1e
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842074245
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-72521228087528
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-72521228087494
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842074251
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842074301
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842073588
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842074161
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842074183
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842073252
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842026220
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-72521228087460
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-72521228087442
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842026026
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-715212280871459
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-72521228087474
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-715212280871453
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-715212280871455
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-72521228087622
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-715212280871451
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842074695
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842074523
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-71521228087137
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842074521
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-72521228087542
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842074513
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-715212280871211
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-715212280871457
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-72521228087640
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-72521228087646
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-161351842025116
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-715212280871461
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-715212280871463
+/home/redhat/.cache/mozilla/firefox/ccgwe29l.default-default/settings/main/quicksuggest/icon-71521228087187
+/home/redhat/.config/gnome-initial-setup-done
+/home/redhat/.config/dconf/user
+/home/redhat/.config/ibus/bus/6c692f591b00495fa3fdccf0fa73c45f-unix-1
+/home/redhat/.config/gtk-3.0/bookmarks
+/home/redhat/.config/gedit/accels
+/home/redhat/.local/share/gnome-shell/gnome-overrides-migrated
+/home/redhat/.local/share/gnome-shell/application_state
+/home/redhat/.local/share/gnome-shell/notifications
+/home/redhat/.local/share/gsettings-data-convert
+/home/redhat/.local/share/flatpak/repo/config
+/home/redhat/.local/share/webkitgtk/storage/5vTxDPccnhqplCKAkvwXF181oBFUn2UJDLtZiLupXD0/5vTxDPccnhqplCKAkvwXF181oBFUn2UJDLtZiLupXD0/origin
+/home/redhat/.local/share/gnome-settings-daemon/input-sources-converted
+/home/jim/test
+Question Number 96: Verify the assigned home directory of all local interactive users are group owned by the local user.
+User    Directory     Permission              Owner   Group
+redhat  /home/redhat  700                     redhat  redhat
+jim     x             HomeFolderDoesNotExist          
+Question Number 97: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 98: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 99: Finding
+	Reason: The session lock timeout when activating the screensaver for the GUI is set to 0 seconds means that the session lock timeout will not engage automatically.
+Question Number 100: Potential Finding: The user logon list is not disabled If the system does not have a GUI, this requirement is Not Applicable
+Question Number 101: Not a Finding.
+	Installed tmux Package(s):
+tmux.x86_64               2.7-1.el8               @rhel-8-for-x86_64-baseos-rpms
+Question Number 102: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 103: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 104: Not a Finding.
+Question Number 105: Finding
+	Reason: The setting 'space_left_action = email' was not found in the configuration file '/etc/audit/auditd.conf'.
+Question Number 106: Not a Finding.
+Question Number 107: Finding
+	Reason: The unit file 'fapolicyd.service' is disabled and inactive.
+
+Question Number 108: Finding
+	Reason: The setting 'permissive = 0' was not found in the configuration file '/etc/fapolicyd/fapolicy.conf'.
+Question Number 108: Finding
+	Reason: The setting 'deny perm=any all : all' was not found in the configuration file '/etc/fapolicyd/fapolicyd.rules'.
+Question Number 108: Finding
+	Reason: The setting 'deny perm=any all : all' was not found in the configuration file '/etc/fapolicyd/compiled.rules'.
+Question Number 109: Not a Finding.
+	Installed usbguard Package(s):
+usbguard.x86_64            1.0.0-8.el8_7.2     @rhel-8-for-x86_64-appstream-rpms
+usbguard-selinux.noarch    1.0.0-8.el8_7.2     @rhel-8-for-x86_64-appstream-rpms
+Question Number 110: Finding
+	Reason: The unit file 'usbguard.service' is disabled and inactive.
+
+Question Number 111: Not a Finding.
+	Installed openssh-server Package(s):
+openssh-server.x86_64       8.0p1-17.el8_7        @rhel-8-for-x86_64-baseos-rpms
+Question Number 112: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 113: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 114: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 115: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 116: Finding
+	Reason: mcafeetp isn't installed.
+Question Number 116: Finding
+	Reason: The unit file 'mfetpd.service' is  and inactive.
+
+Question Number 117: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 118: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 119: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 120: Not a Finding.
+Question Number 121: Not a Finding.
+Question Number 122: Not a Finding.
+Question Number 123: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 124: Finding
+	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.

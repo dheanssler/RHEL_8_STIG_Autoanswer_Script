@@ -84,13 +84,15 @@ checkUnitFile () {
 	expectedStatus=$2
 	expectedReturnCode=$3
 	questionNumber=$4
-	unitFileCheck=$(sudo systemctl is-enabled $1)
+	unitFileCheck=$(systemctl is-enabled $1 2>/dev/null)
 	checkReturnCode=$?
+	expectedActive=$5
+	isActive=$(systemctl is-active $1 2>/dev/null)
 	
-	if [ $unitFileCheck == $expectedStatus ] && [ $checkReturnCode -eq $expectedReturnCode ]; then
+	if [ "$unitFileCheck " == "$expectedStatus " ] && [ $checkReturnCode -eq $expectedReturnCode ] && [ $isActive == $expectedActive ]; then
 		printResults "$questionNumber" "NFIND" ""
 	else
-		printResults "$questionNumber" "FIND" "The unit file '$unitFileName' was not $expectedStatus.\n"
+		printResults "$questionNumber" "FIND" "The unit file '$unitFileName' is $unitFileCheck and $isActive.\n"
 	fi
 }
 
@@ -210,11 +212,6 @@ checkCommandOutput () {
 	matchString2=$7
 	result=$($command 2>&1 | grep -E $key)
 	
-	echo $key
-	echo $command
-	echo $matchString
-	echo $result
-	
 	if [[ $result =~ "$matchString" ]]; then
 		printResults "$questionNumber" "NFIND" ""
 	else
@@ -241,17 +238,23 @@ checkFilePermissions () {
 	failIfFound=$4
 	questionNumber=$5
 	followSymLinks=$7
+	secondaryFilter=$8
 	results=""
 	
 	if [ $followSymLinks == "TRUE" ]; then
 		result=$(find -L $startDirectory -type $type $permissions2 -print 2>/dev/null)
+		
 	else
-		result=$(find $startDirectory -type $type $permissions2 -print 2>/dev/null)	
+		result=$(find $startDirectory -type $type $permissions2 -print 2>/dev/null)
+	fi
+	
+	if [[ -n $secondaryFilter ]]; then
+		result=$(echo "$result" | grep -v -E $secondaryFilter)
 	fi
 	
 	if [[ $result ]]; then
 		if [ $failIfFound == "TRUE" ]; then
-			printResults "$questionNumber" "FIND" "One or more objects of type '$type' within directory '$startDirectory' were identified that $6\nMatching Objects:\n\t$result"
+			printResults "$questionNumber" "FIND" "One or more objects of type '$type' within directory '$startDirectory' were identified that $6\nMatching Objects:\n$result"
 		else
 			printResults "$questionNumber" "NFIND" ""
 		fi
@@ -322,6 +325,43 @@ checkFileSystemTable () {
 
 }
 
+#checkFileSystemTableSpecific "94" "nosuid" "FALSE" "/boot/efi" "Confirm that this mounted file system does not refer to removable media."
+checkFileSystemTableSpecific () {
+	questionNumber=$1
+	searchTerm=$2
+	failIfFound=$3
+	mountPoint=$4
+	reason=$5
+
+	results=$(grep -v "#" /etc/fstab | grep $mountPoint)
+	printResults "$questionNumber" "REVIEW" "Review the following file system mounts:"
+	if [ $failIfFound == "TRUE" ]; then
+		for result in $results; do
+			mountPoint=$(echo -n $result | awk '{print $2}')
+			fileSystemType=$(echo -n $result | awk '{print $3}')
+			if [[ $result =~ $searchTerm ]]; then
+				printResults "" "ADD" "Potential Finding: The option $searchTerm was found for mount '$mountPoint' of type '$fileSystemType'. $reason"
+			else
+				printResults "" "ADD" "Not a Finding: The option $searchTerm was not found for mount '$mountPoint' of type '$fileSystemType'."
+			fi
+		done
+	else
+		for result in $results; do
+			mountPoint=$(echo -n $result | awk '{print $2}')
+			fileSystemType=$(echo -n $result | awk '{print $3}')
+			if [[ ! $result =~ $searchTerm ]]; then
+				printResults "" "ADD" "Potential Finding: The option $searchTerm was not found for mount '$mountPoint' of type '$fileSystemType'. $reason2"
+			else
+				printResults "" "ADD" "Not a Finding: The option $searchTerm was found for mount '$mountPoint' of type '$fileSystemType'."
+			fi
+		done
+	fi
+	
+	
+	IFS=$oldIFS
+
+}
+
 checkUserHomeDirExists () {
 	questionNumber=$1
 	results=$(pwck -r | grep -E "directory.*does not exist")
@@ -350,16 +390,14 @@ checkUserHomeDirPermissions () {
 	case $questionNumber in
 		"41")
 			printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users has a mode of '0750' or less.\n"
-			#filter="-perm /027"
-			#printf "\tDirectory\tPermission\tOwner\tGroup\n"
 		;;
 		
 		"42")
 			printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users are owned by the local user.\n"
-			#filter=""
-			#printf "\tDirectory\tPermission\tOwner\tGroup\n"
 		;;
-		
+		"96")
+			printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users are group owned by the local user.\n"
+		;;
 		*)
 		echo "Error"
 		;;	
@@ -491,13 +529,38 @@ checkGnomeSetting () {
 			result=$(gsettings get org.gnome.desktop.session idle-delay)
 			if [[ $result =~ "uint32" ]]; then
 				timeOut=$(echo -n $result | awk '{print $2}')
-				if [[ $timeOut -le 900 ]]; then
+				if [[ $timeOut -eq 0 ]]; then
+					printResults "$questionNumber" "FIND" "The automatic session lock for GUI is set to $timeOut seconds which is means that the session lock will not engage automatically."
+				elif [[ $timeOut -le 900 ]]; then
 					printResults "$questionNumber" "NFIND" ""
 				else
 					printResults "$questionNumber" "FIND" "The automatic session lock for GUI is set to $timeOut seconds which is greater than 15 minutes (900 seconds)."
 				fi
 			else
 				printResults "$questionNumber" "PFIND" "The automatic session lock for GUI is not defined. If the system does not have any graphical user interface installed, this requirement is Not Applicable."
+			fi
+		;;
+		"LOCKSESSION")
+			result=$(gsettings get org.gnome.desktop.screensaver lock-delay)
+			if [[ $result =~ "uint32" ]]; then
+				lockTimeout=$(echo -n $result | awk '{print $2}')
+				if [[ $lockTimeout -eq 0 ]]; then
+					printResults "$questionNumber" "FIND" "The session lock timeout when activating the screensaver for the GUI is set to $lockTimeout seconds means that the session lock timeout will not engage automatically."
+				elif [[ $lockTimeout -le 5 ]]; then
+					printResults "$questionNumber" "NFIND" ""
+				else
+					printResults "$questionNumber" "FIND" "The session lock timeout when activating the screensaver for the GUI is set to $lockTimeout seconds which is greater than 5 seconds."
+				fi
+			else
+				printResults "$questionNumber" "PFIND" "The session lock timeout when activating the screensaver for the GUI is not defined. If the system does not have any graphical user interface installed, this requirement is Not Applicable."
+			fi
+		;;
+		"USERLIST")
+			result=$(gsettings get org.gnome.login-screen disable-user-list)
+			if [[ $result =~ "true" ]]; then
+				printResults "$questionNumber" "NFIND" ""
+			else
+				printResults "$questionNumber" "PFIND" "The user logon list is not disabled If the system does not have a GUI, this requirement is Not Applicable"
 			fi
 		;;
 		*)
@@ -554,6 +617,7 @@ checkFailLockAuditing () {
 		fi
 	fi
 }
+
 
 checkAideConfig () {
 	questionNumber=$1
@@ -686,16 +750,30 @@ kernelModuleCheck () {
 				printResults "$questionNumber" "ADD" "FAIL: Kernel Module is not Currently Loaded"
 			fi
 			
-			if [ "$(systemctl is-enabled $module 2>/dev/null)" == disabled -o "$(systemctl is-enabled $module 2>/dev/null)" == "masked" ]; then
+			if [ "$(systemctl is-enabled $module 2>/dev/null >/dev/null)" == "disabled" -o "$(systemctl is-enabled $module 2>/dev/null >/dev/null)" == "masked" ]; then
 				printResults "$questionNumber" "ADD" "FAIL: Kernel Module is Masked or Disabled"
 			else
-				systemctl is-enabled $module 2> ./tmp
+				systemctl is-enabled $module 2> ./tmp >./tmp
 				if echo "$(<./tmp)" | grep -q -i "No such file or directory"; then
 					printResults "$questionNumber" "ADD" "INFO: No Such Kernel Module Found"
 				else
 					printResults "$questionNumber" "ADD" "PASS: Kernel Module is not Masked or Disabled"
 				fi
 			fi
+<<com2
+			if [ "$(systemctl is-active $module 2>/dev/null)" == "inactive" ]; then
+				printResults "$questionNumber" "ADD" "FAIL: Kernel Module is inactive."
+			elif [ "$(systemctl is-active $module 2>/dev/null)" == "active" ]; then
+				printResults "$questionNumber" "ADD" "PASS: Kernel Module is active."
+			else
+				systemctl is-active $module 2> ./tmp >./tmp
+				if echo "$(<./tmp)" | grep -q -i "No such file or directory"; then
+					printResults "$questionNumber" "ADD" "INFO: No Such Kernel Module Found"
+				else
+					printResults "$questionNumber" "ADD" "ERROR"
+				fi
+			fi
+com2
 		done
 	fi
 
@@ -748,7 +826,7 @@ packageInstalled() {
 	questionNumber=$1
 	package=$2
 	failIfFound=$3
-	installationStatus=$(yum list installed $package* -q | tail -n+2)
+	installationStatus=$(yum list installed $package* -q 2>/dev/null | tail -n+2)
 	
 	if [ $failIfFound == "TRUE" ]; then
 		if [[ "$installationStatus" =~ "$package" ]]; then
@@ -817,6 +895,8 @@ biosUEFICheck () {
 		check="NA"
 	elif [[ $questionNumber == "87" ]] && [[ $bootType == "UEFI" ]]; then
 		check="NA"
+	elif [[ $questionNumber == "94" ]] && [[ $bootType == "BIOS" ]]; then
+		check="NA"
 	fi
 	
 	case $check in
@@ -835,6 +915,15 @@ biosUEFICheck () {
 				fi
 			done
 		;;
+		
+		"UEFIPART")
+			results=$(grep -v "#" /etc/fstab | grep "/boot/efi\s" | grep "nosuid")
+			if [[ -n $results ]]; then
+				printResults "$questionNumber" "NFIND"
+			else
+				printResults "$questionNumber" "FIND" "The /boot/efi partition either doesn't exist or is not mounted with the nosuid option."
+			fi
+		;;
 		"NA")
 			printResults "$questionNumber" "NOTAPPLICABLE"
 		;;
@@ -844,9 +933,60 @@ biosUEFICheck () {
 	esac
 }
 
-<<com
+sshCheck () {
+	questionNumber=$1
+	check=$2
+	case $check in
+		"TERMINATION")
+			terminationTimeout=$(grep -r -v "#" /etc/ssh/sshd_config* | grep -i "ClientAliveInterval" | grep -o -e "[0-9]*")
+			if [[ -n $terminationTimeout ]]; then
+				if [[ $terminationTimeout -gt 600 ]]; then
+					printResults "$questionNumber" "FIND" "Timeout is configured to 10 minutes or greater."
+				elif [[ $terminationTimeout -eq 0 ]]; then
+					printResults "$questionNumber" "FIND" "Timeout is disabled."
+				else
+					printResults "$questionNumber" "NFIND"
+				fi
+			else
+				printResults "$questionNumber" "FIND" "Automatic Timeout for SSH Connections is not defined or is commented out."
+			fi
+		;;
+		"CRYPTOPOL")
+			cryptoPolicy=$(grep "CRYPTO_POLICY" /etc/sysconfig/sshd)
+			if grep "CRYPTO_POLICY" /etc/sysconfig/sshd | grep -q "#"; then
+				printResults "$questionNumber" "NFIND"
+			else
+				printResults "$questionNumber" "FIND" "SSHD must be configured to use system-wide crypto policies."
+			fi
+		;;
+		"GSSAPI")
+			gssapi=$(grep "CRYPTO_POLICY" /etc/sysconfig/sshd_config* | awk '{print $2}')
+			if [[ $gssapi == "no" ]]; then
+				printResults "$questionNumber" "NFIND"
+			else
+				printResults "$questionNumber" "FIND" "GSSAPI Authentication is either commented out, not defined, or configured to a value other than 'no'."
+			fi
+			
+		;;
+		*)
+			echo "Error"
+		;;
+	esac
+}
+
+separatePartition () {
+	questionNumber=$1
+	partition=$2
+	if grep -v "#" /etc/fstab | grep -q $partition; then
+		printResults "$questionNumber" "NFIND"
+	else
+		printResults "$questionNumber" "FIND" "A separate partition for $partition has not been created."
+	fi
+}
+
+
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
-checkUnitFile "ctrl-alt-del.target" "masked" "1" "2"
+checkUnitFile "ctrl-alt-del.target" "masked" "1" "2" "inactive"
 checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
 checkUpdateHistory "4"
 checkDriveEncryption "5"
@@ -880,8 +1020,8 @@ checkFileSystemTable "30" "nodev" "FALSE" "Confirm that this mounted file system
 checkFileSystemTable "31" "noexec" "FALSE" "Confirm that this mounted file system does not refer to removable media."
 checkFileSystemTable "32" "nosuid" "FALSE" "Confirm that this mounted file system does not refer to removable media."
 needtoRevist "33"
-checkUnitFile "kdump.service" "masked" "1" "34"
-checkUnitFile "systemd-coredump.socket" "masked" "1" "35"
+checkUnitFile "kdump.service" "masked" "1" "34" "inactive"
+checkUnitFile "systemd-coredump.socket" "masked" "1" "35" "inactive"
 needtoRevist "36"
 needtoRevist "37"
 checkFilePermissions "/" "d" "-perm -0002 -uid +999 -print" "TRUE" "38" "are world-writable and are not owned by a system account." "FALSE"
@@ -923,8 +1063,6 @@ chronyChecks "72"
 kernelModuleCheck "73" "uvcvideo" "TRUE"
 firewallCheck "74" "PPSM"
 kernelModuleCheck "75" "autofs" "TRUE"
-
-#20230523
 firewallCheck "76" "DEFAULTDENY"
 packageInstalled "77" "firewalld" "FALSE"
 checkForWirelessDevices "78"
@@ -939,4 +1077,41 @@ biosUEFICheck "86" "SUPERUSERS"
 biosUEFICheck "87" "SUPERUSERS"
 checkForSetting "ExecStart=-/usr/lib/systemd/systemd-sulogin-shell emergency" "/usr/lib/systemd/system/emergency.service" "88"
 checkSettingContains "password sufficient pam_unix.so" "/etc/pam.d/system-auth" "sha512" "89"
-com
+sshCheck "90" "TERMINATION"
+sshCheck "91" "CRYPTOPOL"
+sshCheck "92" "GSSAPI"
+separatePartition "93" "/var/tmp"
+biosUEFICheck "94" "UEFIPART"
+checkFilePermissions "/home/" "f" "-perm /0027" "TRUE" "95" "have a mode more permissive than 0750" "FALSE" "\.[^\/]+$"
+checkUserHomeDirPermissions "96"
+needtoRevist "97"
+needtoRevist "98"
+checkGnomeSetting "99" "LOCKSESSION"
+checkGnomeSetting "100" "USERLIST"
+packageInstalled "101" "tmux" "FALSE"
+needtoRevist "102"
+needtoRevist "103"
+checkUnitFile "auditd.service" "enabled" "0" "104" "active"
+checkForSetting "space_left_action = email" "/etc/audit/auditd.conf" "105"
+checkUnitFile "firewalld.service" "enabled" "0" "106" "active"
+checkUnitFile "fapolicyd.service" "enabled" "0" "107" "active"
+checkForSetting "permissive = 0" "/etc/fapolicyd/fapolicy.conf" "108"
+checkForSetting "deny perm=any all : all" "/etc/fapolicyd/fapolicyd.rules" "108"
+checkForSetting "deny perm=any all : all" "/etc/fapolicyd/compiled.rules" "108"
+packageInstalled "109" "usbguard" "FALSE"
+checkUnitFile "usbguard.service" "enabled" "0" "110" "active"
+packageInstalled "111" "openssh-server" "FALSE"
+needtoRevist "112"
+needtoRevist "113"
+needtoRevist "114"
+needtoRevist "115"
+packageInstalled "116" "mcafeetp" "FALSE"
+checkUnitFile "mfetpd.service" "enabled" "0" "116" "active"
+needtoRevist "117"
+needtoRevist "118"
+needtoRevist "119"
+checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "d" "-perm /0022" "TRUE" "120" "have a mode more permissive than 0755" "FALSE"
+checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "d" "! -user root" "TRUE" "121" "are not owned by root." "FALSE"
+checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "d" "! -group root" "TRUE" "122" "are not group owned by root." "FALSE"
+needtoRevist "123"
+needtoRevist "124"
