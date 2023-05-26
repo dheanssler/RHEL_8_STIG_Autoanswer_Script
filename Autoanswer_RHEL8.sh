@@ -998,6 +998,42 @@ separatePartition () {
 checkPasswordRequirements () {
 	questionNumber=$1
 	case $questionNumber in
+	"49") #needs testing on older RHEL
+		if [[ $release == "8.0" ]] || [[ $release == "8.1" ]] || [[ $release == "8.2" ]]; then
+			preauthfailResult=$(grep -v "#" /etc/pam.d/password-auth | grep -i -E "auth\s+required\s+pam_faillock\.so\s+preauth.*dir=/.*")
+			authfailResult=$(grep -v "#" /etc/pam.d/password-auth | grep -i -E "auth\s+required\s+pam_faillock\.so\s+authfail.*dir=/.*")
+			if [[ -n $preauthfailResult ]] && [[ -n $authfailResult ]]; then
+				preauthfailResult=$(grep -v "#" /etc/pam.d/system-auth | grep -i -E "auth\s+required\s+pam_faillock\.so\s+preauth.*dir=/.*")
+				authfailResult=$(grep -v "#" /etc/pam.d/system-auth | grep -i -E "auth\s+required\s+pam_faillock\.so\s+authfail.*dir=/.*")
+				if [[ -n $preauthfailResult ]] && [[ -n $authfailResult ]]; then
+					printResults "$questionNumber" "NFIND"
+				else
+					printResults "$questionNumber" "FIND" "The fail lock directory contents are not configured to persist after a reboot."
+				fi
+			else
+					printResults "$questionNumber" "FIND" "The fail lock directory contents are not configured to persist after a reboot."
+			fi
+		else
+			printResults "$questionNumber" "NOTAPPLICABLE"
+		fi
+	;;
+	"50")
+		if ! [[ $release == "8.0" ]] && ! [[ $release == "8.1" ]] && ! [[ $release == "8.2" ]]; then
+			result=$(grep -v "#" /etc/security/faillock.conf | grep -i -o -E "dir\s*=\s*/.*")
+			if [[ -n $result ]]; then
+				directory=$(echo -n "$result" | sed s/"dir\s*=\s*"//)
+				if [[ $directory == "/var/run/faillock" ]]; then
+					printResults "$questionNumber" "FIND" "Directory is configured to the default directory '$directory'. This is a finding."
+				else
+					printResults "$questionNumber" "NFIND"
+				fi
+			else
+				printResults "$questionNumber" "FIND" "Local lockouts must persist after a reboot."
+			fi
+		else
+			printResults "$questionNumber" "NOTAPPLICABLE"
+		fi
+	;;
 	"126")
 		result=$(grep -E "password\s+required\s+pam_pwquality\.so" /etc/pam.d/system-auth)
 		if [[ -n $result ]]; then
@@ -1128,6 +1164,56 @@ worldWritableInitializationFiles () {
 	IFS=$oldIFS
 }
 
+dnsConfiguration () {
+	questionNumber=$1
+	isNSSUsingDNS=$(grep -i -E "hosts:.*dns" /etc/nsswitch.conf)
+	if [[ -n isNSSUsingDNS ]]; then
+		dnsServersCount=$(grep -v "#" /etc/resolv.conf | grep -i "nameserver" | wc -l)
+		if [[ $dnsServersCount -ge 2 ]]; then
+			printResults "$questionNumber" "NFIND"
+		else
+			printResults "$questionNumber" "FIND" "The host is configured to use DNS for Name Service Switch (NSS); however, there are less than two DNS nameservers defined in /etc/resolv.conf."
+		fi
+	else
+		isResolvEmpty=$(grep -v "#" /etc/resolv.conf | wc -l)
+		if [[ -n $isResolvEmpty ]]; then
+			printResults "$questionNumber" "NFIND"
+		else
+			printResults "$questionNumber" "FIND" "Local host authentication is being used; however, /etc/resolv.conf is not empty."
+		fi
+	fi
+	
+}
+
+checkUserInitializationPathsVars () {
+	questionNumber=$1
+	oldIFS=$IFS
+	IFS=$'\n'
+	for userLine in $(cat /etc/passwd); do
+		userName=$(echo -n $userLine | awk -F':' '{print $1}')
+		userHomeDir=$(echo -n $userLine | awk -F':' '{print $6}')
+		if [[ ! $userHomeDir == "/" ]]; then
+			if [[ $(id -u $userName) -ge 1000 ]] || [[ $(id -u $userName) -eq 0 ]]; then
+				if [[ -d $userHomeDir ]];  then
+					externalPathVars=$(grep -i -h -o "path=.*" $userHomeDir/.* 2>/dev/null | tr -d '"' | sed "s/[Pp][Aa][Tt][Hh]=//g" | sed "s|\$HOME|$userHomeDir|g")
+					IFS=':'
+					for pathVar in $externalPathVars; do
+						if [[ $pathVar == "$userHomeDir"* ]] || [[ $pathVar == "\$PATH"* ]]; then
+							printf ""
+						else
+							printResults "$questionNumber" "FIND" "$pathVar is located outside of user $userName home directory $userHomeDir."
+						fi
+					done
+					IFS=$'\n'
+				else
+					printResults "$questionNumber" "PFIND" "User home directory defined in /etc/passwd does not exist."
+				fi
+			fi
+		fi
+	done
+	IFS=$oldIFS
+}
+
 <<com
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2" "inactive"
@@ -1166,8 +1252,8 @@ checkFileSystemTable "32" "nosuid" "FALSE" "Confirm that this mounted file syste
 worldWritableInitializationFiles "33"
 checkUnitFile "kdump.service" "masked" "1" "34" "inactive"
 checkUnitFile "systemd-coredump.socket" "masked" "1" "35" "inactive"
-needtoRevist "36"
-needtoRevist "37"
+dnsConfiguration "36"
+checkUserInitializationPathsVars "37"
 checkFilePermissions "/" "d" "-perm -0002 -uid +999 -print" "TRUE" "38" "are world-writable and are not owned by a system account." "FALSE"
 checkFilePermissions "/" "d" "-perm -0002 -gid +999 -print" "TRUE" "39" "are world-writable and are not group owned by a system account." "FALSE"
 checkUserHomeDirExists "40"
@@ -1179,8 +1265,8 @@ checkFilePermissions "/" "" "-nouser" "TRUE" "45" "do not have a valid owner." "
 checkFilePermissions "/" "" "-nogroup" "TRUE" "46" "do not have a valid owner." "FALSE"
 checkNonPrivUserHomeFileSystems "47"
 checkUserAccountSetting "48" "EXPIRATION"
-needtoRevist "49"
-needtoRevist "50"
+checkPasswordRequirements "49"
+checkPasswordRequirements "50"
 checkCommandOutput "true" "gsettings get org.gnome.desktop.screensaver lock-enabled" "true" "51"
 checkForSetting "removal-action='lock-screen'" "/etc/dconf/db/*" "52"
 checkGnomeSetting "53" "SESSIONLOCK"
@@ -1278,5 +1364,9 @@ needtoRevist "140"
 needtoRevist "141"
 packageInstalled "142" "rng-tools" "FALSE"
 com
-verifyLogging "9" "auth\.\* authpriv\.\* daemon\.\*" "/var/log/secure"
-worldWritableInitializationFiles "33"
+#verifyLogging "9" "auth\.\* authpriv\.\* daemon\.\*" "/var/log/secure"
+#worldWritableInitializationFiles "33"
+#dnsConfiguration "36"
+checkUserInitializationPathsVars "37"
+checkPasswordRequirements "49"
+checkPasswordRequirements "50"
