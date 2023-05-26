@@ -1214,6 +1214,120 @@ checkUserInitializationPathsVars () {
 	IFS=$oldIFS
 }
 
+smartCardCheck () {
+	questionNumber=$1
+	pamCertAuth=$(grep -v "#" /etc/sssd/sssd.conf | grep -i -E "pam_cert_auth\s+=\s+true")
+	systemAuthCertAuth=$(grep -v "#" /etc/pam.d/system-auth | grep -i -E "pam_sss\.so\s(try|require)_cert_auth")
+	smartcardAuthCertAuth=$(grep -v "#" /etc/pam.d/smartcard-auth | grep -i -E "pam_sss\.so\s(try|require)_cert_auth")
+	
+	if [[ -n $pamCertAuth ]] && [[ -n $systemAuthCertAuth ]] && [[ -n $smartcardAuthCertAuth ]]; then
+		printResults "$questionNumber" "NFIND"
+	else
+		printResults "$questionNumber" "PFIND" "Smart card logon for multifactor authentication for access to interactive acccounts is not implemented. If the system administrator demonstrates the use of an approved alternative multifactor authentication method, this requirement is not applicable-otherwise this is a finding."
+	fi
+}
+
+cachedCredentialsCheck () {
+	questionNumber=$1
+	cachedCredentialsAllowed=$(grep -v "#" /etc/sssd/sssd.conf | grep -i -E "cache_credentials\s+=\s+true")
+	if [[ -n $cachedCredentialsAllowed ]]; then
+		cachedCredentialsExpiration=$(grep -v "#" /etc/sssd/sssd.conf | grep -i -E "offline_credentials_expiration\s+=\s+1")
+		if [[ -n $cachedCredentialsExpiration ]]; then
+			printResults "$questionNumber" "NFIND"
+		else
+			printResults "$questionNumber" "FIND" "SSSD must prohibit the use of cached authentications after one day."
+		fi
+	else
+		printResults "$questionNumber" "NFIND"
+	fi
+}
+
+verifyPamFailLockinUse () {
+	questionNumber=$1
+	case $questionNumber in
+	"97")
+		if ! [[ $release == "8.0" ]] && ! [[ $release == "8.1" ]]; then
+			systemAuthResult=$(grep -v "#" /etc/pam.d/system-auth | grep -i -E "pam_faillock\.so\s+preauth")
+			if [[ -n $systemAuthResult ]]; then
+					printResults "$questionNumber" "NFIND"
+			else
+					printResults "$questionNumber" "FIND" "The operating system does not configure the use of the pam_faillock.so module in the /etc/pam.d/system-auth file."
+			fi
+		else
+			printResults "$questionNumber" "NOTAPPLICABLE"
+		fi
+	;;
+	"98")
+		if ! [[ $release == "8.0" ]] && ! [[ $release == "8.1" ]]; then
+			systemAuthResult=$(grep -v "#" /etc/pam.d/password-auth | grep -i -E "pam_faillock\.so\s+preauth")
+			if [[ -n $systemAuthResult ]]; then
+					printResults "$questionNumber" "NFIND"
+			else
+					printResults "$questionNumber" "FIND" "The operating system does not configure the use of the pam_faillock.so module in the /etc/pam.d/password-auth file."
+			fi
+		else
+			printResults "$questionNumber" "NOTAPPLICABLE"
+		fi
+	;;
+	*)
+		echo "Error"
+	;;
+	esac
+}
+
+preventGNOMEOverrides () {
+	questionNumber=$1
+	case $questionNumber in
+	"102")
+		systemDBProfile=$(grep -v "#" /etc/dconf/profile/user | grep -i -E "system-db:.*" | awk -F ":" '{print $2}')
+		numberOfProfiles=$(echo -n "$systemDBProfile" | wc -w)
+		if [[ $numberOfProfiles -gt 1 ]]; then
+			printResults "$questionNumber" "REVIEW" "$numberOfProfiles system-db profiles were identified as being in use. Review the following to verify that there are no conflicting settings. At least one check must return PASS."
+			for profile in $systemDBProfile; do
+				isLocked=$(grep -v "#" /etc/dconf/db/$profile.d/locks/* 2>/dev/null| grep -i "/org/gnome/desktop/session/idle-delay")
+				if [[ -n $isLocked ]]; then
+						printResults "$questionNumber" "ADD" "PASS: Lock setting for idle-delay was found in profile $profile."
+				else
+						printResults "$questionNumber" "ADD" "REVIEW: Lock setting for idle-delay was not found in profile $profile."
+				fi
+			done
+			else
+			isLocked=$(grep -v "#" /etc/dconf/db/$systemDBProfile.d/locks/* | grep -i "/org/gnome/desktop/session/idle-delay")
+			if [[ -n $isLocked ]]; then
+					printResults "$questionNumber" "NFIND"
+			else
+					printResults "$questionNumber" "PFIND" "The operating system does not prevent a user from overriding the session idle-delay setting for the GUI. If the system does not have a GUI installed, this requirement is Not Applicable."
+			fi
+		fi
+	;;
+	"103")
+		systemDBProfile=$(grep -v "#" /etc/dconf/profile/user | grep -i -E "system-db:.*" | awk -F ":" '{print $2}')
+		numberOfProfiles=$(echo -n "$systemDBProfile" | wc -w)
+		if [[ $numberOfProfiles -gt 1 ]]; then
+			printResults "$questionNumber" "REVIEW" "$numberOfProfiles system-db profiles were identified as being in use. Review the following to verify that there are no conflicting settings. At least one check must return PASS."
+			for profile in $systemDBProfile; do
+				isLocked=$(grep -v "#" /etc/dconf/db/$profile.d/locks/* 2>/dev/null| grep -i "/org/gnome/desktop/screensaver/lock-enabled")
+				if [[ -n $isLocked ]]; then
+						printResults "$questionNumber" "ADD" "PASS: Lock setting for screensaver lock-enabled was found in profile $profile."
+				else
+						printResults "$questionNumber" "ADD" "REVIEW: Lock setting for screensaver lock-enabled was not found in profile $profile."
+				fi
+			done
+			else
+			isLocked=$(grep -v "#" /etc/dconf/db/$systemDBProfile.d/locks/* | grep -i "/org/gnome/desktop/screensaver/lock-enabled")
+			if [[ -n $isLocked ]]; then
+					printResults "$questionNumber" "NFIND"
+			else
+					printResults "$questionNumber" "PFIND" "The operating system does not prevent a user from overriding the screensaver lock-enabled setting for the GUI. If the system does not have a GUI installed, this requirement is Not Applicable."
+			fi
+		fi
+	;;
+	*)
+		echo "Error"
+	;;
+	esac
+}
+
 <<com
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2" "inactive"
@@ -1275,9 +1389,9 @@ checkForSetting "lock-after-time 900" "/etc/tmux.conf" "54"
 checkForSetting "/org/gnome/desktop/screensaver/lock-delay" "/etc/dconf/db/local.d/locks/*" "55"
 needtoRevist "56"
 checkUserAccountSetting "57" "UNIQUEUSERID"
-needtoRevist "58"
+smartCardCheck "58"
 checkUserAccountSetting "59" "EMERACCOUNT"
-needtoRevist "60"
+cachedCredentialsCheck "60"
 checkUserAccountSetting "61" "AUTHORIZED"
 checkUserAccountSetting "62" "UMASK"
 checkShellUmask "63"
@@ -1314,13 +1428,13 @@ separatePartition "93" "/var/tmp"
 biosUEFICheck "94" "UEFIPART"
 checkFilePermissions "/home/" "f" "-perm /0027" "TRUE" "95" "have a mode more permissive than 0750" "FALSE" "\.[^\/]+$"
 checkUserHomeDirPermissions "96"
-needtoRevist "97"
-needtoRevist "98"
+verifyPamFailLockinUse "97"
+verifyPamFailLockinUse "98"
 checkGnomeSetting "99" "LOCKSESSION"
 checkGnomeSetting "100" "USERLIST"
 packageInstalled "101" "tmux" "FALSE"
-needtoRevist "102"
-needtoRevist "103"
+preventGNOMEOverrides "102"
+preventGNOMEOverrides "103"
 checkUnitFile "auditd.service" "enabled" "0" "104" "active"
 checkForSetting "space_left_action = email" "/etc/audit/auditd.conf" "105"
 checkUnitFile "firewalld.service" "enabled" "0" "106" "active"
@@ -1364,9 +1478,17 @@ needtoRevist "140"
 needtoRevist "141"
 packageInstalled "142" "rng-tools" "FALSE"
 com
-#verifyLogging "9" "auth\.\* authpriv\.\* daemon\.\*" "/var/log/secure"
-#worldWritableInitializationFiles "33"
-#dnsConfiguration "36"
+<<zom
+verifyLogging "9" "auth\.\* authpriv\.\* daemon\.\*" "/var/log/secure"
+worldWritableInitializationFiles "33"
+dnsConfiguration "36"
 checkUserInitializationPathsVars "37"
 checkPasswordRequirements "49"
 checkPasswordRequirements "50"
+zom
+smartCardCheck "58"
+cachedCredentialsCheck "60"
+verifyPamFailLockinUse "97"
+verifyPamFailLockinUse "98"
+preventGNOMEOverrides "102"
+preventGNOMEOverrides "103"
