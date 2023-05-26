@@ -68,7 +68,7 @@ checkForSetting () {
 	#echo $searchLocation
 	#echo $questionNumber
 
-	searchResults=$(sudo grep -rioh $searchString $searchLocation 2>/dev/null)
+	searchResults=$(grep -rioh $searchString $searchLocation 2>/dev/null)
 	IFS=$oldIFS
 	#echo $searchResults
 
@@ -110,7 +110,7 @@ checkDriveEncryption () {
 	printf "Question Number $questionNumber: Review the following block devices. Ask the system administrator about any devices indicated as not being encrypted. If there is no evidence that a partition or block device is encrypted, this is a finding. \n"
 	if [ -x "$(command -v cryptsetup)" ]; then
 		for blockDevice in $luksBlockDevices; do
-			luksDumpResults=$(sudo cryptsetup luksDump $blockDevice)
+			luksDumpResults=$(cryptsetup luksDump $blockDevice)
 			luksCipher=$(echo -n "$luksDumpResults" | grep "Cipher:")
 			luksKeyLength=$(echo "$luksDumpResults" | grep -E -o "Cipher key:\s[0-9]+" | grep -E -o "[0-9]+")
 			if [[ $luksCipher =~ "aes" ]]; then
@@ -156,7 +156,7 @@ checkSettingContains () {
 	matchString=$3
 	questionNumber=$4
 
-	searchResults=$(sudo grep -ih $searchString $searchLocation 2>/dev/null)
+	searchResults=$(grep -ih $searchString $searchLocation 2>/dev/null)
 
 	if [[ "${searchResults^^}" =~ "${matchString^^}" ]]; then
 		printResults "$questionNumber" "NFIND" ""
@@ -172,7 +172,7 @@ needtoRevist () {
 
 checkDODRootCA () {
 	questionNumber=$1
-	searchResults=$(sudo openssl x509 -text -in /etc/sssd/pki/sssd_auth_ca_db.pem 2>/dev/null)
+	searchResults=$(openssl x509 -text -in /etc/sssd/pki/sssd_auth_ca_db.pem 2>/dev/null)
 	if (( "$(echo -n $searchResults | wc -c)" > 0 )); then
 		printResults "$questionNumber" "REVIEW" "Review the following certificate information to confirm that the root ca is a DoD-issued certificate with a valid date."
 	else
@@ -1328,7 +1328,91 @@ preventGNOMEOverrides () {
 	esac
 }
 
-<<com
+checkSysctlSetting () {
+	questionNumber=$1
+	settingToCheck=$2
+	expectedValue=$3
+	filesToCheck="/run/sysctl.d/*.conf /usr/local/lib/sysctl.d/*.conf /usr/lib/sysctl.d/*.conf /lib/sysctl.d/*.conf /etc/sysctl.conf /etc/sysctl.d/*.conf"
+	systemctlCommandResults=$(sysctl $settingToCheck | awk '{print $3}')
+	fileCheckResults=$(grep -v "#" $filesToCheck 2>/dev/null | grep -E "$settingToCheck\s+=\s+$expectedValue")
+	if [[ $systemctlCommandResults -eq $expectedValue ]]; then
+		if [[ -n $fileCheckResults ]]; then
+			printResults "$questionNumber" "NFIND" 
+		else
+			printResults "$questionNumber" "FIND" "The value of $expectedValue for setting $settingToCheck is currenty set to the correct setting; however, it is not set in any sysctl configuration file."
+		fi
+	else
+		printResults "$questionNumber" "FIND" "The value for setting $settingToCheck is set to $systemctlCommandResults not the expected value $expectedValue."
+	fi
+}
+
+aideChecks () {
+	questionNumber=$1
+	case $questionNumber in
+	"123")
+		installationStatus=$(yum list installed aide* -q 2>/dev/null | tail -n+2)
+		if [[ $installationStatus =~ "aide" ]]; then
+			isAIDEConfigured=$(aide --check)
+			if [[ $isAIDEConfigured == "Couldn't open file"* ]]; then
+				printResults "$questionNumber" "PFIND" "Advanced Intrusion Detection Environment (AIDE) is installed, but not configured. If there is no approved alternative file integrity checking tool installed and configured, this is a finding."
+			else
+				printResults "$questionNumber" "NFIND"
+			fi
+		else
+			printResults "$questionNumber" "PFIND" "Advanced Intrusion Detection Environment (AIDE) is not installed. If there is no approved alternative file integrity checking tool installed and configured, this is a finding."
+		fi
+	;;
+	*)
+		echo "error"
+	;;
+	esac
+
+}
+
+checkSudoers () {
+	questionNumber=$1
+	case $questionNumber in
+	"124")
+		printResults "$questionNumber" "REVIEW" "The operating system must specify only the default include directory for the /etc/sudoers file. If any checks come back as a FAIL, this is a finding."
+		includedSudoersDirectories=$(grep "include" /etc/sudoers /etc/sudoers.d 2>/dev/null | awk '{print $2}')
+		for dir in $includedSudoersDirectories; do
+			if ! [[ $dir == "/etc/sudoers.d"* ]]; then
+				printResults "$questionNumber" "ADD" "FAIL: The directory $dir is included in the configuration files for sudoers."
+			fi
+		done
+	;;
+	"125")
+		checkBypassPassForPrivEsc=$(grep pam_succeed_if /etc/pam.d/sudo)
+		if [[ -n $checkBypassPassForPrivEsc ]]; then
+			printResults "$questionNumber" "FIND" "The operating system must not be configured to bypass password requirements for privilege escalation."
+		else
+			printResults "$questionNumber" "NFIND"
+		fi
+	;;
+	*)
+		echo "error"
+	;;
+	esac
+
+}
+
+checkSELinuxConfinedUserRoles () {
+	questionNumber=$1
+	table="\tLoginName\tSELinuxUser\tSELinuxRoles\n"
+	printResults "$questionNumber" "REVIEW" "Obtain a list of authorized users for the system. All users must be mapped to an individual SELinux User and that user must only belong to appropriately tailored confined role as defined by the organization."
+	seLinuxUserMappings=$(semanage login -l | tail -n+4)
+	oldIFS=$IFS
+	IFS=$'\n'
+	for mapping in $seLinuxUserMappings; do
+		loginName=$(echo -n "$mapping" | awk '{print $1}')
+		seLinuxName=$(echo -n "$mapping" | awk '{print $2}')
+		seLinuxRole=$(semanage user -l | grep "$seLinuxName" | awk '{for(i=5;i<=NF;i++) printf $i " "}')
+		table="$table$loginName\t$seLinuxName\t$seLinuxRole\n"
+	done
+	IFS=$oldIFS
+	printf "$table" | column -t
+}
+
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2" "inactive"
 checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
@@ -1445,28 +1529,28 @@ checkForSetting "deny perm=any all : all" "/etc/fapolicyd/compiled.rules" "108"
 packageInstalled "109" "usbguard" "FALSE"
 checkUnitFile "usbguard.service" "enabled" "0" "110" "active"
 packageInstalled "111" "openssh-server" "FALSE"
-needtoRevist "112"
-needtoRevist "113"
-needtoRevist "114"
-needtoRevist "115"
+checkSysctlSetting "112" "net.ipv4.conf.default.accept_redirects"  "0"
+checkSysctlSetting "113" "net.ipv4.conf.all.accept_source_route" "0"
+checkSysctlSetting "114" "net.ipv4.conf.default.accept_source_route" "0"
+checkSysctlSetting "115" "net.ipv4.conf.all.accept_redirects" "0"
 packageInstalled "116" "mcafeetp" "FALSE"
 checkUnitFile "mfetpd.service" "enabled" "0" "116" "active"
 needtoRevist "117"
 needtoRevist "118"
-needtoRevist "119"
+checkSysctlSetting "119" "net.ipv4.conf.all.forwarding" "0"
 checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "d" "-perm /0022" "TRUE" "120" "have a mode more permissive than 0755" "FALSE"
 checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "d" "! -user root" "TRUE" "121" "are not owned by root." "FALSE"
 checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "d" "! -group root" "TRUE" "122" "are not group owned by root." "FALSE"
-needtoRevist "123"
-needtoRevist "124"
-needtoRevist "125"
+aideChecks "123"
+checkSudoers "124"
+checkSudoers "125"
 checkPasswordRequirements "126"
 checkPasswordRequirements "127"
 checkPasswordRequirements "128"
 checkPasswordRequirements "129"
 checkPasswordRequirements "130"
 checkCommandOutputImproved "131" "systemctl get-default" "multi-user.target" "If the ISSO lacks a documented requirement for a graphical user interface, this is a finding."
-needtoRevist "132"
+checkSELinuxConfinedUserRoles "132"
 checkForSetting "CRYPTO_POLICY='-oKexAlgorithms=ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512'" "/etc/crypto-policies/back-ends/opensshserver.config" "133"
 checkUnitFile "rngd" "enabled" "0" "134" "active"
 needtoRevist "135"
@@ -1477,18 +1561,24 @@ needtoRevist "139"
 needtoRevist "140"
 needtoRevist "141"
 packageInstalled "142" "rng-tools" "FALSE"
-com
-<<zom
 verifyLogging "9" "auth\.\* authpriv\.\* daemon\.\*" "/var/log/secure"
 worldWritableInitializationFiles "33"
 dnsConfiguration "36"
 checkUserInitializationPathsVars "37"
 checkPasswordRequirements "49"
 checkPasswordRequirements "50"
-zom
 smartCardCheck "58"
 cachedCredentialsCheck "60"
 verifyPamFailLockinUse "97"
 verifyPamFailLockinUse "98"
 preventGNOMEOverrides "102"
 preventGNOMEOverrides "103"
+checkSysctlSetting "112" "net.ipv4.conf.default.accept_redirects"  "0"
+checkSysctlSetting "113" "net.ipv4.conf.all.accept_source_route" "0"
+checkSysctlSetting "114" "net.ipv4.conf.default.accept_source_route" "0"
+checkSysctlSetting "115" "net.ipv4.conf.all.accept_redirects" "0"
+checkSysctlSetting "119" "net.ipv4.conf.all.forwarding" "0"
+aideChecks "123"
+checkSudoers "124"
+checkSudoers "125"
+checkSELinuxConfinedUserRoles "132"
