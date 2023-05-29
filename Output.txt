@@ -4,13 +4,13 @@ Question Number 2: Not a Finding.
 Question Number 3: Not a Finding.
 Question Number 4: Review the following update history and confirm that updates are being performed in accordance with program requirements.
 Updating Subscription Management repositories.
-ID     | Command line                                                                               | Date and time    | Action(s)      | Altered
--------------------------------------------------------------------------------------------------------------------------------------------------
-     3 |                                                                                            | 2023-04-08 06:35 | I, U           |   84   
-     2 |                                                                                            | 2023-03-25 14:15 | Install        |    1   
-     1 |                                                                                            | 2023-03-25 12:57 | Install        | 1413 EE
+ID     | Command line                                                                                | Date and time    | Action(s)      | Altered
+--------------------------------------------------------------------------------------------------------------------------------------------------
+     3 |                                                                                             | 2023-04-08 06:35 | I, U           |   84   
+     2 |                                                                                             | 2023-03-25 14:15 | Install        |    1   
+     1 |                                                                                             | 2023-03-25 12:57 | Install        | 1413 EE
 
-Question Number 5: Review the following block devices. Ask the system administrator about any devices indicated as not being encrypted. If there is no evidence that a partition or block device is encrypted, this is a finding. 
+Question Number 5: Review the following block devices. Ask the system administrator about any devices indicated as not being encrypted. If there is no evidence that a partition or block device is encrypted, this is a finding.
 	Not a Finding: /dev/mapper/rhel-root is encrypted with AES-256 bit encryption.
 	Not a Finding: /dev/mapper/rhel-swap is encrypted with AES-256 bit encryption.
 	Not a Finding: /dev/mapper/rhel-var_log is encrypted with AES-256 bit encryption.
@@ -33,10 +33,12 @@ Question Number 6: Not a Finding.
 Question Number 7: Finding
 	Reason: The setting 'banner-message-text='You are accessing a U.S. Government (USG) Information System (IS)' was not found in the configuration file '/etc/dconf/db/local.d/*'.
 Question Number 8: Not a Finding.
-Question Number 9: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 9: Review the following checks. If any check comes back as a FAIL, this is a finding.
+	PASS: The event auth.* is being logged by rsyslog to the log file '/var/log/secure'.
+	PASS: The event authpriv.* is being logged by rsyslog to the log file '/var/log/secure'.
+	FAIL: The event daemon.* is not being logged by rsyslog to any log file.
 Question Number 10: Potential Finding: If the System Administrator demonstrates the use of an approved alternate multifactor authentication method, this requirement is not applicable.
-Question Number 11: Review the following files identified as potential private keys. If there are any private keys that are not password protected, this is a finding. 
+Question Number 11: Review the following files identified as potential private keys. If there are any private keys that are not password protected, this is a finding.
 	Not a Finding: /root/.ssh/id_rsa is password protected
 	Finding: /root/.ssh/id_rsa2 is not password protected.
 	Finding: /root/.ssh/issue2 has incorrect file permissions
@@ -101,15 +103,12 @@ Question Number 21: Review the following and validate that the cronjobs are conf
 Question Number 22: Not a Finding.
 Question Number 23: Not a Finding.
 Question Number 24: Not a Finding.
-Question Number 25: Finding
-	Reason: The output of 'grub2-editenv list' did not return the expected result 'page_poison=1'
+Question Number 25: Potential Finding: The output of 'grub2-editenv list' did not return the expected result 'page_poison=1'
 	The result found was ''
-Question Number 26a: Finding
-	Reason: The output of 'grub2-editenv list' did not return the expected result 'vsyscall=none'
+Question Number 26a: Potential Finding: The output of 'grub2-editenv list' did not return the expected result 'vsyscall=none'
 	The result found was ''
 Question Number 26b: Not a Finding.
-Question Number 27a: Finding
-	Reason: The output of 'grub2-editenv list' did not return the expected result 'slub_debug=P'
+Question Number 27a: Potential Finding: The output of 'grub2-editenv list' did not return the expected result 'slub_debug=P'
 	The result found was ''
 Question Number 27b: Not a Finding.
 Question Number 28: Not a Finding.
@@ -118,45 +117,29 @@ Question Number 30: Review the following file system mounts:
 	Potential Finding: The option nodev was not found for mount '/' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
 	Potential Finding: The option nodev was not found for mount '/boot' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
 	Potential Finding: The option nodev was not found for mount '/home' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
-	Not a Finding: The option nodev was found for mount '/tmp' of type 'xfs'.
 	Potential Finding: The option nodev was not found for mount '/var' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
-	Not a Finding: The option nodev was found for mount '/var/log' of type 'xfs'.
-	Not a Finding: The option nodev was found for mount '/var/log/audit' of type 'xfs'.
-	Not a Finding: The option nodev was found for mount '/var/tmp' of type 'xfs'.
 	Potential Finding: The option nodev was not found for mount 'none' of type 'swap'. Confirm that this mounted file system does not refer to removable media.
 	Potential Finding: The option nodev was not found for mount '/mnt/KaliShare' of type 'cifs'. Confirm that this mounted file system does not refer to removable media.
 Question Number 31: Review the following file system mounts:
 	Potential Finding: The option noexec was not found for mount '/' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
 	Potential Finding: The option noexec was not found for mount '/boot' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
-	Not a Finding: The option noexec was found for mount '/home' of type 'xfs'.
-	Not a Finding: The option noexec was found for mount '/tmp' of type 'xfs'.
 	Potential Finding: The option noexec was not found for mount '/var' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
-	Not a Finding: The option noexec was found for mount '/var/log' of type 'xfs'.
-	Not a Finding: The option noexec was found for mount '/var/log/audit' of type 'xfs'.
-	Not a Finding: The option noexec was found for mount '/var/tmp' of type 'xfs'.
 	Potential Finding: The option noexec was not found for mount 'none' of type 'swap'. Confirm that this mounted file system does not refer to removable media.
 	Potential Finding: The option noexec was not found for mount '/mnt/KaliShare' of type 'cifs'. Confirm that this mounted file system does not refer to removable media.
 Question Number 32: Review the following file system mounts:
 	Potential Finding: The option nosuid was not found for mount '/' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
-	Not a Finding: The option nosuid was found for mount '/boot' of type 'xfs'.
-	Not a Finding: The option nosuid was found for mount '/home' of type 'xfs'.
-	Not a Finding: The option nosuid was found for mount '/tmp' of type 'xfs'.
 	Potential Finding: The option nosuid was not found for mount '/var' of type 'xfs'. Confirm that this mounted file system does not refer to removable media.
-	Not a Finding: The option nosuid was found for mount '/var/log' of type 'xfs'.
-	Not a Finding: The option nosuid was found for mount '/var/log/audit' of type 'xfs'.
-	Not a Finding: The option nosuid was found for mount '/var/tmp' of type 'xfs'.
 	Potential Finding: The option nosuid was not found for mount 'none' of type 'swap'. Confirm that this mounted file system does not refer to removable media.
 	Potential Finding: The option nosuid was not found for mount '/mnt/KaliShare' of type 'cifs'. Confirm that this mounted file system does not refer to removable media.
-Question Number 33: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 33: Review the following list for any world-writable files referenced in user initialization scripts. If there are any FAILs, this is a finding.
+	FAIL: The world-writable file '/usr/lib/mylib' was found referenced in user initialization file '/home/redhat/.dsfknjhsdkfnjsd'
 Question Number 34: Not a Finding.
 Question Number 35: Finding
 	Reason: The unit file 'systemd-coredump.socket' is static and active.
 
-Question Number 36: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 36: Not a Finding.
 Question Number 37: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+	Reason: /usr/lib is located outside of user john home directory /home/john.
 Question Number 38: Finding
 	Reason: One or more objects of type 'd' within directory '/' were identified that are world-writable and are not owned by a system account.
 Matching Objects:
@@ -172,15 +155,16 @@ Question Number 40: Review the following for users with non-existent home direct
 	Potential Finding: The home directory '/nonexisting' for 'cockpit-ws' doesn't exist. If this is an interactive user, this is a finding.
 	Potential Finding: The home directory '/nonexisting' for 'cockpit-wsinstance' doesn't exist. If this is an interactive user, this is a finding.
 	Potential Finding: The home directory '/run/gnome-initial-setup/' for 'gnome-initial-setup' doesn't exist. If this is an interactive user, this is a finding.
-	Finding: The home directory 'x' for 'jim' doesn't exist.
 Question Number 41: Verify the assigned home directory of all local interactive users has a mode of '0750' or less.
-User    Directory     Permission              Owner   Group
-redhat  /home/redhat  700                     redhat  redhat
-jim     x             HomeFolderDoesNotExist          
+User    Directory     Permission  Owner   Group
+root    /root         550         root    root
+redhat  /home/redhat  700         redhat  redhat
+john    /home/john    700         john    jim
 Question Number 42: Verify the assigned home directory of all local interactive users are owned by the local user.
-User    Directory     Permission              Owner   Group
-redhat  /home/redhat  700                     redhat  redhat
-jim     x             HomeFolderDoesNotExist          
+User    Directory     Permission  Owner   Group
+root    /root         550         root    root
+redhat  /home/redhat  700         redhat  redhat
+john    /home/john    700         john    jim
 Question Number 43: Review the following for users with non-existent home directories:
 	Potential Finding: The home directory '/var/cache/clevis' for 'clevis' doesn't exist. If this is an interactive user, this is a finding.
 	Potential Finding: The home directory '/run/gluster' for 'gluster' doesn't exist. If this is an interactive user, this is a finding.
@@ -190,9 +174,38 @@ Question Number 43: Review the following for users with non-existent home direct
 	Potential Finding: The home directory '/nonexisting' for 'cockpit-ws' doesn't exist. If this is an interactive user, this is a finding.
 	Potential Finding: The home directory '/nonexisting' for 'cockpit-wsinstance' doesn't exist. If this is an interactive user, this is a finding.
 	Potential Finding: The home directory '/run/gnome-initial-setup/' for 'gnome-initial-setup' doesn't exist. If this is an interactive user, this is a finding.
-	Finding: The home directory 'x' for 'jim' doesn't exist.
 Question Number 44: Verify that all local initialization files for all users have a mode of '0740' or less.
-User  Directory  Permission  Owner  Group
+User      Directory                                                                                                                                                          Permission  Owner   Group
+root      /root/.bash_logout                                                                                                                                                 644         root    root
+root      /root/.bash_profile                                                                                                                                                644         root    root
+root      /root/.bashrc                                                                                                                                                      644         root    root
+root      /root/.cshrc                                                                                                                                                       644         root    root
+root      /root/.tcshrc                                                                                                                                                      644         root    root
+root      /root/.cache/mozilla/firefox/y4jv6llf.default-default/.startup-incomplete                                                                                          644         root    root
+root      /root/.mozilla/firefox/y4jv6llf.default-default/.parentlock                                                                                                        644         root    root
+root      /root/.mozilla/firefox/y4jv6llf.default-default/storage/permanent/chrome/.metadata-v2                                                                              644         root    root
+operator  /root/.bash_logout                                                                                                                                                 644         root    root
+operator  /root/.bash_profile                                                                                                                                                644         root    root
+operator  /root/.bashrc                                                                                                                                                      644         root    root
+operator  /root/.cshrc                                                                                                                                                       644         root    root
+operator  /root/.tcshrc                                                                                                                                                      644         root    root
+operator  /root/.cache/mozilla/firefox/y4jv6llf.default-default/.startup-incomplete                                                                                          644         root    root
+operator  /root/.mozilla/firefox/y4jv6llf.default-default/.parentlock                                                                                                        644         root    root
+operator  /root/.mozilla/firefox/y4jv6llf.default-default/storage/permanent/chrome/.metadata-v2                                                                              644         root    root
+redhat    /home/redhat/.mozilla/firefox/ccgwe29l.default-default/.parentlock                                                                                                 664         redhat  redhat
+redhat    /home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/permanent/chrome/.metadata-v2                                                                       664         redhat  redhat
+redhat    /home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/default/moz-extension+++0d7426e8-b718-4be1-baab-b442045b8d8a^userContextId=4294967295/.metadata-v2  664         redhat  redhat
+redhat    /home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/default/https+++www.redhat.com/.metadata-v2                                                         664         redhat  redhat
+redhat    /home/redhat/.mozilla/firefox/ccgwe29l.default-default/storage/default/https+++www.google.com/.metadata-v2                                                         664         redhat  redhat
+redhat    /home/redhat/.bash_logout                                                                                                                                          644         redhat  redhat
+redhat    /home/redhat/.bash_profile                                                                                                                                         644         redhat  redhat
+redhat    /home/redhat/.bashrc                                                                                                                                               644         redhat  redhat
+redhat    /home/redhat/.local/share/flatpak/.changed                                                                                                                         644         redhat  redhat
+redhat    /home/redhat/.dsfknjhsdkfnjsd                                                                                                                                      777         root    root
+john      /home/john/.bash_logout                                                                                                                                            644         john    jim
+john      /home/john/.bash_profile                                                                                                                                           644         john    jim
+john      /home/john/.bashrc                                                                                                                                                 644         john    jim
+john      /home/john/.initialization                                                                                                                                         644         root    root
 Question Number 45: Not a Finding.
 Question Number 46: Not a Finding.
 Question Number 47: Verify that all non-privileged user home directories are located on a separate file system/partition.
@@ -234,15 +247,14 @@ gnome-initial-setup  HomeFolderDoesNotExist
 sshd                 /var/empty/sshd          /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
 postfix              /var/spool/postfix       /var        xfs    /dev/mapper/luks-54815cf7-a2d4-4777-81c4-d6bc30a196e1
 redhat               /home/redhat             /home       xfs    /dev/mapper/luks-ff724e64-090b-41b5-b354-bcdb28c0ec42
-jim                  HomeFolderDoesNotExist                      
-Question Number 48: Review the following password expiration information. If any temporary account has no expiration data set or does not expire within 72 hours, this is a finding.
+john                 /home/john               /home       xfs    /dev/mapper/luks-ff724e64-090b-41b5-b354-bcdb28c0ec42
+Question Number 48: Review the following password expiration information. If any temporary account has no expiration date set or does not expire within 72 hours, this is a finding.
 	root	Account expire						: never
 	redhat	Account expire						: never
-	jim	Account expire						: never
-Question Number 49: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+	john	Account expire						: never
+Question Number 49: Not applicable.
 Question Number 50: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+	Reason: Local lockouts must persist after a reboot.
 Question Number 51: Not a Finding.
 Question Number 52: Finding
 	Reason: The setting 'removal-action='lock-screen'' was not found in the configuration file '/etc/dconf/db/*'.
@@ -252,17 +264,14 @@ Question Number 54: Finding
 	Reason: The setting 'lock-after-time 900' was not found in the configuration file '/etc/tmux.conf'.
 Question Number 55: Finding
 	Reason: The setting '/org/gnome/desktop/screensaver/lock-delay' was not found in the configuration file '/etc/dconf/db/local.d/locks/*'.
-Question Number 56: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 56: Potential Finding: The certmap section is not defined in the /etc/sssd/sssd.conf configuration file. If the system administrator is unable to indicate how certificates are mapped to accounts, this is a finding.
 Question Number 57: Not a Finding.
-Question Number 58: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 58: Potential Finding: Smart card logon for multifactor authentication for access to interactive acccounts is not implemented. If the system administrator demonstrates the use of an approved alternative multifactor authentication method, this requirement is not applicable-otherwise this is a finding.
 Question Number 59: Review the following password expiration information. If any emergency account has no expiration data set or does not expire within 72 hours, this is a finding.
 	root	Account expire						: never
 	redhat	Account expire						: never
-	jim	Account expire						: never
-Question Number 60: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+	john	Account expire						: never
+Question Number 60: Not a Finding.
 Question Number 61: Review the following accounts. If any account does not match existing approval documentation, this is a finding.
 	root
 	bin
@@ -311,11 +320,11 @@ Question Number 61: Review the following accounts. If any account does not match
 	postfix
 	tcpdump
 	redhat
-	jim
+	john
 Question Number 62: Review the following umask values for local interactive users. If any listed account has a umask value less restrictive than 0077, this is a finding.
 	root 0022
 	redhat 0022
-	jim 0022
+	john 0022
 Question Number 63: Potential Finding: One or more umask values for an installed shell is not set to 077. If any listed shell has a umask value less restrictive than 077, this is a finding.
 
 	/etc/bashrc:       umask 002
@@ -345,7 +354,7 @@ Question Number 67: Finding
 Question Number 68: Review the available free space on the partition where audit data is stored. The capacity of the partition must be large enough to store at least one week of audit records if the audit records are not immediately sent to the central audit record storage location. There should be at least 10 GB available.
 
 Filesystem                                             Size  Used Avail Use% Mounted on
-/dev/mapper/luks-51f923f0-7981-4111-9650-73d0688b9927  4.0G   73M  4.0G   2% /var/log/audit
+/dev/mapper/luks-51f923f0-7981-4111-9650-73d0688b9927  4.0G   76M  4.0G   2% /var/log/audit
 
 Question Number 69: Potential Finding: Rsyslog does not appear to be configured for remote logging. Ask the system administrator how the audit logs are off-loaded to a different system or media. If there is no evidence that the audit logs are being off-loaded to another system or media, this is a finding.
 Question Number 70: Finding
@@ -355,7 +364,7 @@ Question Number 71: Finding
 Question Number 72: Finding
 	Reason: Maxpoll is not configured. Configure maxpoll to 16 or less.
 Question Number 73: Verify that all of the following checks for each module pass.
-Kernel Module Name: uvcvideo
+	Kernel Module Name: uvcvideo
 	FAIL: Kernel Module Not Blacklisted
 	FAIL: Kernel Module is not setup for false install
 	PASS: Kernel Module is not Currently Loaded
@@ -533,7 +542,7 @@ work
   icmp-blocks: 
   rich rules: 
 Question Number 75: Verify that all of the following checks for each module pass.
-Kernel Module Name: autofs
+	Kernel Module Name: autofs
 	FAIL: Kernel Module Not Blacklisted
 	FAIL: Kernel Module is not setup for false install
 	PASS: Kernel Module is not Currently Loaded
@@ -555,7 +564,7 @@ Question Number 80: Finding
 	Reason: USBGuard is not configured properly to block unauthorized peripherals.
 Question Number 81: Not a Finding.
 Question Number 82: Verify that all of the following checks for each module pass.
-Kernel Module Name: debug-shell
+	Kernel Module Name: debug-shell
 	FAIL: Kernel Module Not Blacklisted
 	FAIL: Kernel Module is not setup for false install
 	PASS: Kernel Module is not Currently Loaded
@@ -575,7 +584,7 @@ Question Number 87: Review the following identified superusers. If any superuser
 Question Number 88: Not a Finding.
 Question Number 89: Not a Finding.
 Question Number 90: Finding
-	Reason: Timeout is configured to 10 minutes or greater.
+	Reason: Timeout is configured to 6000 which is greater than 10 minutes.
 Question Number 91: Not a Finding.
 Question Number 92: Finding
 	Reason: GSSAPI Authentication is either commented out, not defined, or configured to a value other than 'no'.
@@ -768,25 +777,30 @@ Matching Objects:
 /home/redhat/.local/share/flatpak/repo/config
 /home/redhat/.local/share/webkitgtk/storage/5vTxDPccnhqplCKAkvwXF181oBFUn2UJDLtZiLupXD0/5vTxDPccnhqplCKAkvwXF181oBFUn2UJDLtZiLupXD0/origin
 /home/redhat/.local/share/gnome-settings-daemon/input-sources-converted
-/home/jim/test
+/home/john/test
 Question Number 96: Verify the assigned home directory of all local interactive users are group owned by the local user.
-User    Directory     Permission              Owner   Group
-redhat  /home/redhat  700                     redhat  redhat
-jim     x             HomeFolderDoesNotExist          
+User    Directory     Permission  Owner   Group
+root    /root         550         root    root
+redhat  /home/redhat  700         redhat  redhat
+john    /home/john    700         john    jim
 Question Number 97: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+	Reason: The operating system does not configure the use of the pam_faillock.so module in the /etc/pam.d/system-auth file.
 Question Number 98: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+	Reason: The operating system does not configure the use of the pam_faillock.so module in the /etc/pam.d/password-auth file.
 Question Number 99: Finding
 	Reason: The session lock timeout when activating the screensaver for the GUI is set to 0 seconds means that the session lock timeout will not engage automatically.
 Question Number 100: Potential Finding: The user logon list is not disabled If the system does not have a GUI, this requirement is Not Applicable
 Question Number 101: Not a Finding.
 	Installed tmux Package(s):
 tmux.x86_64               2.7-1.el8               @rhel-8-for-x86_64-baseos-rpms
-Question Number 102: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
-Question Number 103: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 102: 3 system-db profiles were identified as being in use. Review the following to verify that there are no conflicting settings. At least one check must return PASS.
+	REVIEW: Lock setting for idle-delay was not found in profile local.
+	REVIEW: Lock setting for idle-delay was not found in profile site.
+	REVIEW: Lock setting for idle-delay was not found in profile distro.
+Question Number 103: 3 system-db profiles were identified as being in use. Review the following to verify that there are no conflicting settings. At least one check must return PASS.
+	REVIEW: Lock setting for screensaver lock-enabled was not found in profile local.
+	REVIEW: Lock setting for screensaver lock-enabled was not found in profile site.
+	REVIEW: Lock setting for screensaver lock-enabled was not found in profile distro.
 Question Number 104: Not a Finding.
 Question Number 105: Finding
 	Reason: The setting 'space_left_action = email' was not found in the configuration file '/etc/audit/auditd.conf'.
@@ -811,28 +825,64 @@ Question Number 111: Not a Finding.
 	Installed openssh-server Package(s):
 openssh-server.x86_64       8.0p1-17.el8_7        @rhel-8-for-x86_64-baseos-rpms
 Question Number 112: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
-Question Number 113: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+	Reason: The value for setting net.ipv4.conf.default.accept_redirects is set to 1 not the expected value 0.
+Question Number 113: Not a Finding.
 Question Number 114: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+	Reason: The value for setting net.ipv4.conf.default.accept_source_route is set to 1 not the expected value 0.
 Question Number 115: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+	Reason: The value of 0 for setting net.ipv4.conf.all.accept_redirects is currenty set to the correct setting; however, it is not set in any sysctl configuration file.
 Question Number 116: Finding
 	Reason: mcafeetp isn't installed.
 Question Number 116: Finding
 	Reason: The unit file 'mfetpd.service' is  and inactive.
 
 Question Number 117: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
-Question Number 118: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+	Reason: There is no directory defined in the file '/etc/security/faillock.conf'.
+Question Number 118: Not applicable.
 Question Number 119: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+	Reason: The value for setting net.ipv4.conf.all.forwarding is set to 1 not the expected value 0.
 Question Number 120: Not a Finding.
 Question Number 121: Not a Finding.
 Question Number 122: Not a Finding.
-Question Number 123: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
-Question Number 124: Finding
-	Reason: The requirements for meeting this STIG aren't clear or the path forward isn't immediately clear.
+Question Number 123: Potential Finding: Advanced Intrusion Detection Environment (AIDE) is installed, but not configured. If there is no approved alternative file integrity checking tool installed and configured, this is a finding.
+Question Number 124: The operating system must specify only the default include directory for the /etc/sudoers file. If any checks come back as a FAIL, this is a finding.
+Question Number 125: Not a Finding.
+Question Number 126: Finding
+	Reason: The operating system doesn't use 'pwquality' to enforce the password complexity rules.
+Question Number 127: Not applicable.
+Question Number 128: Not applicable.
+Question Number 129: Finding
+	Reason: The password complexity module is not configured to limit retries.
+Question Number 130: Finding
+	Reason: The password history is disabled.
+Question Number 131: Potential Finding: The output of 'systemctl get-default' did not return the expected result 'multi-user.target'. The result was 'graphical.target'. If the ISSO lacks a documented requirement for a graphical user interface, this is a finding.
+Question Number 132: Obtain a list of authorized users for the system. All users must be mapped to an individual SELinux User and that user must only belong to appropriately tailored confined role as defined by the organization.
+LoginName    SELinuxUser   SELinuxRoles                          
+__default__  unconfined_u  system_r      unconfined_r            
+jim          root          staff_r       sysadm_r      system_r  unconfined_r
+root         unconfined_u  system_r      unconfined_r            
+Question Number 133: Finding
+	Reason: The setting 'CRYPTO_POLICY='-oKexAlgorithms=ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512'' was not found in the configuration file '/etc/crypto-policies/back-ends/opensshserver.config'.
+Question Number 134: Not a Finding.
+/etc/pam.d/postlogin
+Question Number 135: Finding
+	Reason: The operating system is not configured to provide users with feedback on when account access last occured.
+
+Question Number 136: Finding
+	Reason: The value for setting audit is set to '' not the expected value 1.
+
+Question Number 137: Finding
+	Reason: The value for setting audit_backlog_limit is set to '' not the expected value of greater than or equal to 8192.
+/etc/usbguard/usbguard-daemon.conf
+Question Number 138: Finding
+	Reason: The operating system is not configured audit logging of the USBGuard daemon. If the USBGuard daemon is not installed and enabled, this requirement is not applicable.
+
+Question Number 139: Finding
+	Reason: The value for setting pti is set to '' not the expected value 'on'.
+Question Number 140: Review the following output. If AIDE rules do not verify the extended attributes for all of the files and directories monitored by AIDE, this is a finding.
+	FAIL: AIDE is not configured to verify the extended attributes for the file/directory '/root/test', this is a finding.
+Question Number 141: Review the following output. If AIDE rules do not verify the access controls for all of the files and directories monitored by AIDE, this is a finding.
+	FAIL: AIDE is not configured to verify the access control list for the file/directory '/root/test', this is a finding.
+Question Number 142: Not a Finding.
+	Installed rng-tools Package(s):
+rng-tools.x86_64            6.15-1.el8            @rhel-8-for-x86_64-baseos-rpms

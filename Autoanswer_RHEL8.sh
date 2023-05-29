@@ -107,7 +107,7 @@ checkDriveEncryption () {
 	allBlockDevices=$(blkid | awk '{print substr($1,1,length($1)-1)}')
 	nonLuksBlockDevices=$(blkid | grep -v "crypto_LUKS" | awk '{print substr($1,1,length($1)-1)}')
 	luksBlockDevices=$(blkid | grep "crypto_LUKS" | awk '{print substr($1,1,length($1)-1)}')
-	printf "Question Number $questionNumber: Review the following block devices. Ask the system administrator about any devices indicated as not being encrypted. If there is no evidence that a partition or block device is encrypted, this is a finding. \n"
+	printResults "$questionNumber" "REVIEW" "Review the following block devices. Ask the system administrator about any devices indicated as not being encrypted. If there is no evidence that a partition or block device is encrypted, this is a finding."
 	if [ -x "$(command -v cryptsetup)" ]; then
 		for blockDevice in $luksBlockDevices; do
 			luksDumpResults=$(cryptsetup luksDump $blockDevice)
@@ -181,7 +181,9 @@ checkDODRootCA () {
 }
 
 checkSSHKeyPasswords () {
-	printf "Question Number 11: Review the following files identified as potential private keys. If there are any private keys that are not password protected, this is a finding. \n"
+	questionNumber=$1
+	printResults "$questionNumber" "REVIEW" "Review the following files identified as potential private keys. If there are any private keys that are not password protected, this is a finding."
+	#printf "Question Number 11: Review the following files identified as potential private keys. If there are any private keys that are not password protected, this is a finding. \n"
 	sshDirectories=$(find / -type d -name .ssh 2>/dev/null)
 	for sshDirectory in $sshDirectories; do
 		for file in $(ls $sshDirectory | grep -v .pub); do
@@ -285,7 +287,8 @@ checkCronjob () {
 	questionNumber=$2
 	cronJobs=$(crontab -l | grep -v "#" | grep -i "$name")
 	if [ -x "$(command -v $name)" ]; then
-		printf "Question Number $questionNumber: Review the following and validate that the cronjobs are configured per organization standards\n"
+		printResults "$questionNumber" "REVIEW" "Review the following and validate that the cronjobs are configured per organization standards"
+		#printf "Question Number $questionNumber: Review the following and validate that the cronjobs are configured per organization standards\n"
 		if [[ $cronJobs ]]; then
 			printResults "" "ADD" "Cronjobs identified via crontab -l for the root user:\n\t$cronJobs"
 		else
@@ -310,7 +313,8 @@ checkFileSystemTable () {
 	oldIFS=$IFS
 	IFS=$'\n'
 	results=$(grep -v "#" /etc/fstab)
-	printf "Question Number $questionNumber: Review the following file system mounts:\n"
+	printResults "$questionNumber" "REVIEW" "Review the following file system mounts:"
+	#printf "Question Number $questionNumber: Review the following file system mounts:\n"
 	if [ $failIfFound == "TRUE" ]; then
 		for result in $results; do
 			mountPoint=$(echo -n $result | awk '{print $2}')
@@ -318,7 +322,8 @@ checkFileSystemTable () {
 			if [[ $result =~ $searchTerm ]]; then
 				printResults "" "ADD" "Potential Finding: The option $searchTerm was found for mount '$mountPoint' of type '$fileSystemType'. $reason2"
 			else
-				printResults "" "ADD" "Not a Finding: The option $searchTerm was not found for mount '$mountPoint' of type '$fileSystemType'."
+				printf ""
+				#printResults "" "ADD" "Not a Finding: The option $searchTerm was not found for mount '$mountPoint' of type '$fileSystemType'."
 			fi
 		done
 	else
@@ -328,7 +333,8 @@ checkFileSystemTable () {
 			if [[ ! $result =~ $searchTerm ]]; then
 				printResults "" "ADD" "Potential Finding: The option $searchTerm was not found for mount '$mountPoint' of type '$fileSystemType'. $reason2"
 			else
-				printResults "" "ADD" "Not a Finding: The option $searchTerm was found for mount '$mountPoint' of type '$fileSystemType'."
+				printf ""
+				#printResults "" "ADD" "Not a Finding: The option $searchTerm was found for mount '$mountPoint' of type '$fileSystemType'."
 			fi
 		done
 	fi
@@ -380,7 +386,8 @@ checkUserHomeDirExists () {
 	results=$(pwck -r | grep -E "directory.*does not exist")
 	oldIFS=$IFS
 	IFS=$'\n'
-	printf "Question Number $questionNumber: Review the following for users with non-existent home directories:\n"
+	printResults "$questionNumber" "REVIEW" "Review the following for users with non-existent home directories:"
+	#printf "Question Number $questionNumber: Review the following for users with non-existent home directories:\n"
 	for result in $results; do 
 		userName=$(echo -n $result | awk '{print $2}' | tr -d "'" | tr -d ":")
 		userHomeDir=$(echo -n $result | awk '{print $4}' | tr -d "'")
@@ -402,13 +409,16 @@ checkUserHomeDirPermissions () {
 	filter=""
 	case $questionNumber in
 		"41")
-			printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users has a mode of '0750' or less.\n"
+			printResults "$questionNumber" "REVIEW" "Verify the assigned home directory of all local interactive users has a mode of '0750' or less."
+			#printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users has a mode of '0750' or less.\n"
 		;;
 		"42")
-			printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users are owned by the local user.\n"
+			printResults "$questionNumber" "REVIEW" "Verify the assigned home directory of all local interactive users are owned by the local user."
+			#printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users are owned by the local user.\n"
 		;;
 		"96")
-			printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users are group owned by the local user.\n"
+			printResults "$questionNumber" "REVIEW" "Verify the assigned home directory of all local interactive users are group owned by the local user."
+			#printf "Question Number $questionNumber: Verify the assigned home directory of all local interactive users are group owned by the local user.\n"
 		;;
 		*)
 		echo "Error"
@@ -438,19 +448,20 @@ checkUserLocalInitialization () {
 	oldIFS=$IFS
 	IFS=$'\n'
 	table="\tUser Directory Permission Owner Group\n"
-	printf "Question Number $questionNumber: Verify that all local initialization files for all users have a mode of '0740' or less.\n"
+	printResults "$questionNumber" "REVIEW" "Verify that all local initialization files for all users have a mode of '0740' or less."
+	#printf "Question Number $questionNumber: Verify that all local initialization files for all users have a mode of '0740' or less.\n"
 	for userLine in $(cat /etc/passwd); do
 		userName=$(echo -n $userLine | awk -F':' '{print $1}')
 		userHomeDir=$(echo -n $userLine | awk -F':' '{print $6}')
 		if [[ ! $userHomeDir == "/" ]]; then
 			if [[ $(id -u $userName) -ge 0 ]]; then
 				if [ -d $userHomeDir ];  then
-					for file in $(find $userHomeDir -iname .[^.]* -type f -perm /0037); do
+					for file in $(find $userHomeDir -iname ".*" -type f -perm /0037); do
 						filePermissions=$(stat $file --printf "%n %a %U %G" 2>/dev/null)
 						table="$table$userName $filePermissions\n"
 					done
 				else
-					echo -n "" >/dev/null
+					printf ""
 				fi
 			fi
 		fi
@@ -464,7 +475,8 @@ checkNonPrivUserHomeFileSystems () {
 	oldIFS=$IFS
 	IFS=$'\n'
 	table="\tUser Directory Permission Owner Group\n"
-	printf "Question Number $questionNumber: Verify that all non-privileged user home directories are located on a separate file system/partition.\n"
+	printResults "$questionNumber" "REVIEW" "Verify that all non-privileged user home directories are located on a separate file system/partition."
+	#printf "Question Number $questionNumber: Verify that all non-privileged user home directories are located on a separate file system/partition.\n"
 	for userLine in $(cat /etc/passwd); do
 		userName=$(echo -n $userLine | awk -F':' '{print $1}')
 		userHomeDir=$(echo -n $userLine | awk -F':' '{print $6}')
@@ -490,7 +502,8 @@ checkUserAccountSetting () {
 	settingToCheck=$2
 	case $settingToCheck in
 		"EXPIRATION")
-			printf "Question Number $questionNumber: Review the following password expiration information. If any temporary account has no expiration date set or does not expire within 72 hours, this is a finding.\n"
+			printResults "$questionNumber" "REVIEW" "Review the following password expiration information. If any temporary account has no expiration date set or does not expire within 72 hours, this is a finding."
+			#printf "Question Number $questionNumber: Review the following password expiration information. If any temporary account has no expiration date set or does not expire within 72 hours, this is a finding.\n"
 			for user in $localUsers; do
 				expirationInfo=$(chage -l $user | grep -i "Account expires" | tr -d "\s\s")
 				printResults "" "ADD" "$user\t$expirationInfo"
@@ -505,20 +518,23 @@ checkUserAccountSetting () {
 			fi
 		;;
 		"EMERACCOUNT")
-			printf "Question Number $questionNumber: Review the following password expiration information. If any emergency account has no expiration data set or does not expire within 72 hours, this is a finding.\n"
+			printResults "$questionNumber" "REVIEW" "Review the following password expiration information. If any emergency account has no expiration data set or does not expire within 72 hours, this is a finding."
+			#printf "Question Number $questionNumber: Review the following password expiration information. If any emergency account has no expiration data set or does not expire within 72 hours, this is a finding.\n"
 			for user in $localUsers; do
 				expirationInfo=$(chage -l $user | grep -i "Account expires" | tr -d "\s\s")
 				printResults "" "ADD" "$user\t$expirationInfo"
 			done
 		;;
 		"AUTHORIZED")
-			printf "Question Number $questionNumber: Review the following accounts. If any account does not match existing approval documentation, this is a finding.\n"
+			printResults "$questionNumber" "REVIEW" "Review the following accounts. If any account does not match existing approval documentation, this is a finding."
+			#printf "Question Number $questionNumber: Review the following accounts. If any account does not match existing approval documentation, this is a finding.\n"
 			for user in $allLocalUsers; do
 				printResults "" "ADD" "$user"
 			done
 		;;
 		"UMASK")
-			printf "Question Number $questionNumber: Review the following umask values for local interactive users. If any listed account has a umask value less restrictive than 0077, this is a finding.\n"
+			printResults "$questionNumber" "REVIEW" "Review the following umask values for local interactive users. If any listed account has a umask value less restrictive than 0077, this is a finding."
+			#printf "Question Number $questionNumber: Review the following umask values for local interactive users. If any listed account has a umask value less restrictive than 0077, this is a finding.\n"
 			for user in $localUsers; do
 				result=$(su $user -c "umask")
 				if [[ $(umask) != "0077" ]] && [[ $(umask) != "077" ]]; then
@@ -710,7 +726,8 @@ kernelModuleCheck () {
 	printResults "$questionNumber" "REVIEW" "Verify that all of the following checks for each module pass."
 	if [ $failIfFound == "TRUE" ]; then
 		for module in $modules; do
-			printf "Kernel Module Name: $module\n"
+			printResults "$questionNumber" "ADD" "Kernel Module Name: $module"
+			#printf "Kernel Module Name: $module\n"
 			if grep $module /etc/modprobe.d/* | grep -q blacklist; then
 				printResults "$questionNumber" "ADD" "PASS: Kernel Module Blacklisted"
 			else
@@ -742,7 +759,8 @@ kernelModuleCheck () {
 		done
 	elif [ $failIfFound == "FALSE" ]; then
 		for module in $modules; do
-			printf "Kernel Module Name: $module\n"
+			printResults "$questionNumber" "ADD" "Kernel Module Name: $module"
+			#printf "Kernel Module Name: $module\n"
 			if grep -v "#" /etc/modprobe.d/* | grep $module | grep -q blacklist; then
 				printResults "$questionNumber" "ADD" "FAIL: Kernel Module Blacklisted"
 			else
@@ -771,20 +789,6 @@ kernelModuleCheck () {
 					printResults "$questionNumber" "ADD" "PASS: Kernel Module is not Masked or Disabled"
 				fi
 			fi
-<<com2
-			if [ "$(systemctl is-active $module 2>/dev/null)" == "inactive" ]; then
-				printResults "$questionNumber" "ADD" "FAIL: Kernel Module is inactive."
-			elif [ "$(systemctl is-active $module 2>/dev/null)" == "active" ]; then
-				printResults "$questionNumber" "ADD" "PASS: Kernel Module is active."
-			else
-				systemctl is-active $module 2> ./tmp >./tmp
-				if echo "$(<./tmp)" | grep -q -i "No such file or directory"; then
-					printResults "$questionNumber" "ADD" "INFO: No Such Kernel Module Found"
-				else
-					printResults "$questionNumber" "ADD" "ERROR"
-				fi
-			fi
-com2
 		done
 	fi
 
@@ -1557,8 +1561,66 @@ checkGrubSetting () {
 	esac
 }
 
+#checkSecurityContext "117" "/etc/security/faillock.conf" "faillog_t"
+checkSecurityContext () {
+	questionNumber=$1
+	configFile=$2
+	requiredContext=$3
+	fileToCheck=$(grep -v "#" $configFile 2>/dev/null | grep -E "dir\s*=\s*\S*" | tail -n 1 | sed s/"dir\s*=\s*"//)
+	securityContext=$(ls -Zd $fileToCheck 2>/dev/null)
+	
+	case $questionNumber in
+	
+	"117")
+		if [[ $release == "8.0" ]] || [[ $release == "8.1" ]]; then
+			printResults "$questionNumber" "NOTAPPLICABLE"
+		else
+			if [[ -n $fileToCheck ]]; then
+				if [[ $securityContext =~ $requiredContext ]]; then
+					printResults "$questionNumber" "NFIND"
+				else
+					printResults "$questionNumber" "FIND" "The file/directory '$fileToCheck' has a security context of '$securityContext' which does not contain '$requiredContext'."
+				fi
+			else
+				printResults "$questionNumber" "FIND" "There is no directory defined in the file '$configFile'."
+			fi
+		fi
+	;;
+	"118")
+		if [[ $release == "8.0" ]] || [[ $release == "8.1" ]]; then
+			if [[ -n $fileToCheck ]]; then
+				if [[ $securityContext =~ $requiredContext ]]; then
+					printResults "$questionNumber" "NFIND"
+				else
+					printResults "$questionNumber" "FIND" "The file/directory '$fileToCheck' has a security context of '$securityContext' which does not contain '$requiredContext'."
+				fi
+			else
+				printResults "$questionNumber" "FIND" "There is no directory defined in the file '$configFile'."
+			fi
+		else
+			printResults "$questionNumber" "NOTAPPLICABLE"
+		fi
 
-<<zom
+	;;
+
+	*)
+		echo "error"
+	;;
+	esac
+}
+
+checkCertificateMapping () {
+	questionNumber=$1
+	result=$(grep -i "certmap" /etc/sssd/sssd.conf)
+	if [[ -n $result ]]; then
+		printResults "$questionNumber" "REVIEW" "Review that the certificate of the user or group is mapped to the corresponding user or group. If the system administrator demonstrates the use of an approved alternative multifactor authentication method, this requirement is not applicable."
+		cat /etc/sssd/sssd.conf
+	else
+		printResults "$questionNumber" "PFIND" "The certmap section is not defined in the /etc/sssd/sssd.conf configuration file. If the system administrator is unable to indicate how certificates are mapped to accounts, this is a finding."
+	fi
+}
+
+
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2" "inactive"
 checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
@@ -1617,7 +1679,7 @@ checkGnomeSetting "53" "SESSIONLOCK"
 #20230522
 checkForSetting "lock-after-time 900" "/etc/tmux.conf" "54"
 checkForSetting "/org/gnome/desktop/screensaver/lock-delay" "/etc/dconf/db/local.d/locks/*" "55"
-needtoRevist "56"
+checkCertificateMapping "56"
 checkUserAccountSetting "57" "UNIQUEUSERID"
 smartCardCheck "58"
 checkUserAccountSetting "59" "EMERACCOUNT"
@@ -1681,8 +1743,8 @@ checkSysctlSetting "114" "net.ipv4.conf.default.accept_source_route" "0"
 checkSysctlSetting "115" "net.ipv4.conf.all.accept_redirects" "0"
 packageInstalled "116" "mcafeetp" "FALSE"
 checkUnitFile "mfetpd.service" "enabled" "0" "116" "active"
-needtoRevist "117"
-needtoRevist "118"
+checkSecurityContext "117" "/etc/security/faillock.conf" "faillog_t"
+checkSecurityContext "118" "/etc/pam.d/password-auth" "faillog_t"
 checkSysctlSetting "119" "net.ipv4.conf.all.forwarding" "0"
 checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "d" "-perm /0022" "TRUE" "120" "have a mode more permissive than 0755" "FALSE"
 checkFilePermissions "/lib /lib64 /usr/lib /usr/lib64" "d" "! -user root" "TRUE" "121" "are not owned by root." "FALSE"
@@ -1707,36 +1769,3 @@ checkGrubSetting "139" "pti" "on" "TEXT"
 aideChecks "140"
 aideChecks "141"
 packageInstalled "142" "rng-tools" "FALSE"
-
-
-verifyLogging "9" "auth\.\* authpriv\.\* daemon\.\*" "/var/log/secure"
-worldWritableInitializationFiles "33"
-dnsConfiguration "36"
-checkUserInitializationPathsVars "37"
-checkPasswordRequirements "49"
-checkPasswordRequirements "50"
-smartCardCheck "58"
-cachedCredentialsCheck "60"
-verifyPamFailLockinUse "97"
-verifyPamFailLockinUse "98"
-preventGNOMEOverrides "102"
-preventGNOMEOverrides "103"
-checkSysctlSetting "112" "net.ipv4.conf.default.accept_redirects"  "0"
-checkSysctlSetting "113" "net.ipv4.conf.all.accept_source_route" "0"
-checkSysctlSetting "114" "net.ipv4.conf.default.accept_source_route" "0"
-checkSysctlSetting "115" "net.ipv4.conf.all.accept_redirects" "0"
-checkSysctlSetting "119" "net.ipv4.conf.all.forwarding" "0"
-aideChecks "123"
-checkSudoers "124"
-checkSudoers "125"
-checkSELinuxConfinedUserRoles "132"
-checkConfigurationRegExp "135" "session\s+required\s+pam_lastlog\.so.*showfailed" "/etc/pam.d/postlogin" "silent" "The operating system is not configured to provide users with feedback on when account access last occured."
-checkGrubSetting "136" "audit" "1" "EQ"
-checkGrubSetting "137" "audit_backlog_limit" "8192" "GE"
-checkConfigurationRegExp "138" "AuditBackend=LinuxAudit" "/etc/usbguard/usbguard-daemon.conf" "#" "The operating system is not configured audit logging of the USBGuard daemon. If the USBGuard daemon is not installed and enabled, this requirement is not applicable."
-checkGrubSetting "139" "pti" "on" "TEXT"
-aideChecks "140"
-aideChecks "141"
-zom
-
-checkUserInitializationPathsVars "37"
