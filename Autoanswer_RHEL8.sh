@@ -949,7 +949,7 @@ sshCheck () {
 	check=$2
 	case $check in
 		"TERMINATION")
-			terminationTimeout=$(grep -r -v "#" /etc/ssh/sshd_config* | grep -i "ClientAliveInterval" | grep -o -e "[0-9]*")
+			terminationTimeout=$(grep -r -v "#" /etc/ssh/sshd_config* 2>/dev/null | grep -i "ClientAliveInterval" | grep -o -e "[0-9]*")
 			if [[ -n $terminationTimeout ]]; then
 				if [[ $terminationTimeout -gt 600 ]]; then
 					printResults "$questionNumber" "FIND" "Timeout is configured to $terminationTimeout which is greater than 10 minutes."
@@ -971,7 +971,7 @@ sshCheck () {
 			fi
 		;;
 		"GSSAPI")
-			gssapi=$(grep "CRYPTO_POLICY" /etc/sysconfig/sshd_config* | awk '{print $2}')
+			gssapi=$(grep "CRYPTO_POLICY" /etc/sysconfig/sshd_config* 2>/dev/null | awk '{print $2}')
 			if [[ $gssapi == "no" ]]; then
 				printResults "$questionNumber" "NFIND"
 			else
@@ -1195,11 +1195,11 @@ checkUserInitializationPathsVars () {
 		if [[ ! $userHomeDir == "/" ]]; then
 			if [[ $(id -u $userName) -ge 1000 ]] || [[ $(id -u $userName) -eq 0 ]]; then
 				if [[ -d $userHomeDir ]];  then
-					externalPathVars=$(grep -i -h -o "path=.*" $userHomeDir/.* 2>/dev/null | tr -d '"' | sed "s/[Pp][Aa][Tt][Hh]=//g" | sed "s|\$HOME|$userHomeDir|g")
+					externalPathVars=$(grep -i -h -o --exclude="*history*" "path=.*" $userHomeDir/.* 2>/dev/null | tr -d '"' | sed "s/[Pp][Aa][Tt][Hh]=//g" | sed "s,\$HOME,$userHomeDir,g")
 					IFS=':'
 					for pathVar in $externalPathVars; do
 						if [[ $pathVar == "$userHomeDir"* ]] || [[ $pathVar == "\$PATH"* ]]; then
-							printf ""
+							echo -n ""
 						else
 							printResults "$questionNumber" "FIND" "$pathVar is located outside of user $userName home directory $userHomeDir."
 						fi
@@ -1362,6 +1362,68 @@ aideChecks () {
 			printResults "$questionNumber" "PFIND" "Advanced Intrusion Detection Environment (AIDE) is not installed. If there is no approved alternative file integrity checking tool installed and configured, this is a finding."
 		fi
 	;;
+	"140")
+		installationStatus=$(yum list installed aide* -q 2>/dev/null | tail -n+2)
+		printResults "$questionNumber" "REVIEW" "Review the following output. If AIDE rules do not verify the extended attributes for all of the files and directories monitored by AIDE, this is a finding."
+		if [[ $installationStatus =~ "aide" ]]; then
+			compliantAideRules=$(grep -v "#" /etc/aide.conf | grep -E "[A-Z,_]+\s+=\s+.*xattrs")
+			compliantAideRuleNames=$(echo -n "$compliantAideRules" | awk '{print $1}')
+			compliantAideRuleNames=${compliantAideRuleNames^^}
+			selectionLines=$(grep -v "#" /etc/aide.conf | grep -E "^/")
+			oldIFS=$IFS
+			IFS=$'\n'
+			for line in $selectionLines; do
+				lineRules=$(echo -n "$line" | awk '{print $2}' | sed "s/\+/ /g")
+				lineRules=${lineRules^^}
+				IFS=$oldIFS
+				numberOfFails=0
+				for rule in $lineRules; do
+					if ! [[ $compliantAideRuleNames =~ $rule ]]; then
+						numberOfFails=$((numberOfFails+1))
+					fi
+				done
+				IFS=$'\n'
+				if ! [[ $numberOfFails -lt $(echo -n "$lineRules" | wc -w) ]]; then
+					printResults "$questionNumber" "ADD" "FAIL: AIDE is not configured to verify the extended attributes for the file/directory '$(echo -n "$line" | awk '{print $1}')', this is a finding."
+				fi
+			done
+			IFS=$oldIFS
+			#need to iterate through selection lines to see if they contain one of the required rules
+		else
+			printResults "$questionNumber" "PFIND" "Advanced Intrusion Detection Environment (AIDE) is not installed. If there is no approved alternative file integrity checking tool installed and configured, this is a finding."
+		fi
+	;;
+	"141")
+		installationStatus=$(yum list installed aide* -q 2>/dev/null | tail -n+2)
+		printResults "$questionNumber" "REVIEW" "Review the following output. If AIDE rules do not verify the access controls for all of the files and directories monitored by AIDE, this is a finding."
+		if [[ $installationStatus =~ "aide" ]]; then
+			compliantAideRules=$(grep -v "#" /etc/aide.conf | grep -E "[A-Z,_]+\s+=\s+.*acl")
+			compliantAideRuleNames=$(echo -n "$compliantAideRules" | awk '{print $1}')
+			compliantAideRuleNames=${compliantAideRuleNames^^}
+			selectionLines=$(grep -v "#" /etc/aide.conf | grep -E "^/")
+			oldIFS=$IFS
+			IFS=$'\n'
+			for line in $selectionLines; do
+				lineRules=$(echo -n "$line" | awk '{print $2}' | sed "s/\+/ /g")
+				lineRules=${lineRules^^}
+				IFS=$oldIFS
+				numberOfFails=0
+				for rule in $lineRules; do
+					if ! [[ $compliantAideRuleNames =~ $rule ]]; then
+						numberOfFails=$((numberOfFails+1))
+					fi
+				done
+				IFS=$'\n'
+				if ! [[ $numberOfFails -lt $(echo -n "$lineRules" | wc -w) ]]; then
+					printResults "$questionNumber" "ADD" "FAIL: AIDE is not configured to verify the access control list for the file/directory '$(echo -n "$line" | awk '{print $1}')', this is a finding."
+				fi
+			done
+			IFS=$oldIFS
+			#need to iterate through selection lines to see if they contain one of the required rules
+		else
+			printResults "$questionNumber" "PFIND" "Advanced Intrusion Detection Environment (AIDE) is not installed. If there is no approved alternative file integrity checking tool installed and configured, this is a finding."
+		fi
+	;;
 	*)
 		echo "error"
 	;;
@@ -1413,6 +1475,90 @@ checkSELinuxConfinedUserRoles () {
 	printf "$table" | column -t
 }
 
+
+checkConfigurationRegExp () {
+	questionNumber=$1
+	expression=$2
+	configFiles=$3
+	echo $configFiles
+	failIfFound=$4
+	reason=$5
+	result=$(grep -v "#" "$configFiles" | grep -E $expression)
+	if [[ -n $result ]]; then
+		if [[ $result =~ $failIfFound ]]; then
+			printResults "$questionNumber" "FIND" "$reason"
+		else
+			printResults "$questionNumber" "NFIND"
+		fi
+	else
+		printResults "$questionNumber" "FIND" "$reason"
+	fi
+}
+
+#checkGrubSetting "136" "audit" "1" "EQ"
+checkGrubSetting () {
+	questionNumber=$1
+	settingToCheck=$2
+	expectedValue=$3
+	comparison=$4
+	filesToCheck="/etc/default/grub"
+	grubCommandResults=$(grub2-editenv list | grep -o -E "$settingToCheck=\S*" | grep -o -E "=\S*" | tr -d "=")
+	echo $grubCommandResults
+	fileCheckValue=$(grep -v "#" $filesToCheck 2>/dev/null | grep -o -E "$settingToCheck=\S*" | grep -o -E "=\S*" | tr -d "=")
+	
+	case $comparison in
+	"EQ")
+		if [[ $grubCommandResults -eq $expectedValue ]]; then
+			if [[ $fileCheckValue -eq $expectedValue ]]; then
+				printResults "$questionNumber" "NFIND" 
+			else
+				printResults "$questionNumber" "FIND" "The value of $expectedValue for setting $settingToCheck is currently set to the correct setting; however, it is not set to persist between kernel updates in the '/etc/default/grub' configuration file."
+			fi
+		else
+			printResults "$questionNumber" "FIND" "The value for setting $settingToCheck is set to '$grubCommandResults' not the expected value $expectedValue."
+		fi
+	;;
+	"LE")
+		if [[ $grubCommandResults -le $expectedValue ]]; then
+			if [[ $fileCheckValue -le $expectedValue ]]; then
+				printResults "$questionNumber" "NFIND" 
+			else
+				printResults "$questionNumber" "FIND" "The value of $expectedValue for setting $settingToCheck is currently set to the correct setting; however, it is not set to persist between kernel updates in the '/etc/default/grub' configuration file."
+			fi
+		else
+			printResults "$questionNumber" "FIND" "The value for setting $settingToCheck is set to '$grubCommandResults' not the expected value of less than or equal to $expectedValue."
+		fi
+	;;
+	"GE")
+		if [[ $grubCommandResults -ge $expectedValue ]]; then
+			if [[ $fileCheckValue -ge $expectedValue ]]; then
+				printResults "$questionNumber" "NFIND" 
+			else
+				printResults "$questionNumber" "FIND" "The value of $expectedValue for setting $settingToCheck is currently set to the correct setting; however, it is not set to persist between kernel updates in the '/etc/default/grub' configuration file."
+			fi
+		else
+			printResults "$questionNumber" "FIND" "The value for setting $settingToCheck is set to '$grubCommandResults' not the expected value of greater than or equal to $expectedValue."
+		fi
+	;;
+	"TEXT")
+		if [[ ${grubCommandResults^^} =~ ${expectedValue^^} ]]; then
+			if [[ ${fileCheckValue^^} =~ ${expectedValue^^} ]]; then
+				printResults "$questionNumber" "NFIND" 
+			else
+				printResults "$questionNumber" "FIND" "The value of $expectedValue for setting $settingToCheck is currently set to the correct setting; however, it is not set to persist between kernel updates in the '/etc/default/grub' configuration file."
+			fi
+		else
+			printResults "$questionNumber" "FIND" "The value for setting $settingToCheck is set to '$grubCommandResults' not the expected value '$expectedValue'."
+		fi
+	;;
+	*)
+		echo "error"
+	;;
+	esac
+}
+
+
+<<zom
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2" "inactive"
 checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
@@ -1553,14 +1699,16 @@ checkCommandOutputImproved "131" "systemctl get-default" "multi-user.target" "If
 checkSELinuxConfinedUserRoles "132"
 checkForSetting "CRYPTO_POLICY='-oKexAlgorithms=ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512'" "/etc/crypto-policies/back-ends/opensshserver.config" "133"
 checkUnitFile "rngd" "enabled" "0" "134" "active"
-needtoRevist "135"
-needtoRevist "136"
-needtoRevist "137"
-needtoRevist "138"
-needtoRevist "139"
-needtoRevist "140"
-needtoRevist "141"
+checkConfigurationRegExp "135" "session\s+required\s+pam_lastlog\.so.*showfailed" "/etc/pam.d/postlogin" "silent" "The operating system is not configured to provide users with feedback on when account access last occured."
+checkGrubSetting "136" "audit" "1" "EQ"
+checkGrubSetting "137" "audit_backlog_limit" "8192" "GE"
+checkConfigurationRegExp "138" "AuditBackend=LinuxAudit" "/etc/usbguard/usbguard-daemon.conf" "#" "The operating system is not configured audit logging of the USBGuard daemon. If the USBGuard daemon is not installed and enabled, this requirement is not applicable."
+checkGrubSetting "139" "pti" "on" "TEXT"
+aideChecks "140"
+aideChecks "141"
 packageInstalled "142" "rng-tools" "FALSE"
+
+
 verifyLogging "9" "auth\.\* authpriv\.\* daemon\.\*" "/var/log/secure"
 worldWritableInitializationFiles "33"
 dnsConfiguration "36"
@@ -1582,3 +1730,13 @@ aideChecks "123"
 checkSudoers "124"
 checkSudoers "125"
 checkSELinuxConfinedUserRoles "132"
+checkConfigurationRegExp "135" "session\s+required\s+pam_lastlog\.so.*showfailed" "/etc/pam.d/postlogin" "silent" "The operating system is not configured to provide users with feedback on when account access last occured."
+checkGrubSetting "136" "audit" "1" "EQ"
+checkGrubSetting "137" "audit_backlog_limit" "8192" "GE"
+checkConfigurationRegExp "138" "AuditBackend=LinuxAudit" "/etc/usbguard/usbguard-daemon.conf" "#" "The operating system is not configured audit logging of the USBGuard daemon. If the USBGuard daemon is not installed and enabled, this requirement is not applicable."
+checkGrubSetting "139" "pti" "on" "TEXT"
+aideChecks "140"
+aideChecks "141"
+zom
+
+checkUserInitializationPathsVars "37"
