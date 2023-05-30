@@ -1,17 +1,61 @@
 #/bin/bash
+scriptVersion="1.0.0b1"
+
+#Change directory to script directory.
+parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+cd "$parent_path"
+
+verbose="TRUE" #Need to remove once verbose option is fixed
+while getopts "fvVho:?" options; do
+	case "${options}" in
+	f)
+		useFindingID="TRUE"
+		;;
+	o)
+		outputToFile="TRUE"
+		outputFile="$OPTARG"
+		if [[ -w $outputFile ]]; then
+			if [[ -s $outputFile ]]; then
+				printf "WARNING: The file $outputFile already exists. This file will be overwritten in five (5) seconds unless this script is cancelled (CTRL+C).\n"
+				sleep 5
+			fi
+		else
+			printf "ERROR: Unable to write to $outputFile. Exiting...\n"
+			exit
+		fi
+		;;
+	v)
+		verbose="TRUE"
+		;;
+	V)
+		printf "RHEL 8.x Autoanswer Script v$scriptVersion\nWritten to work with DISA RHEL_8_STIG_1.8.2\nMust be run as root.\n\n"
+		exit
+		;;
+	h)
+		printf "Usage: ./Autoanswer_RHEL8.sh [OPTIONS]\n\nCheck manual STIG items from RHEL 8 STIG 1.8.2\n\n\t-f,\toutput finding IDs instead of question numbers\n\t-v,\tdisplay reasons for finding, questions found not to be a finding, and not applicable questions\n\t-V,\tdisplays version information\n\t-h/-?,\tdisplays this help message\n\n"
+		exit
+		;;
+	?)
+		printf "Usage: ./Autoanswer_RHEL8.sh [OPTIONS]\n\nCheck manual STIG items from RHEL 8 STIG 1.8.2\n\n\t-f,\toutput finding IDs instead of question numbers\n\t-v,\tdisplay reasons for finding, questions found not to be a finding, and not applicable questions\n\t-V,\tdisplays version information\n\t-h/-?,\tdisplays this help message\n\n"
+		exit
+		;;
+	*)
+		printf "Usage: ./Autoanswer_RHEL8.sh [OPTIONS]\n\nCheck manual STIG items from RHEL 8 STIG 1.8.2\n\n\t-f,\toutput finding IDs instead of question numbers\n\t-v,\tdisplay reasons for finding, questions found not to be a finding, and not applicable questions\n\t-V,\tdisplays version information\n\t-h/-?,\tdisplays this help message\n\n"
+		exit
+		;;
+	esac
+done
+
 #Check if script is being run as root.
 if ([ -f /usr/bin/id ] && [ "$(/usr/bin/id -u)" -eq "0" ]) || [ "`whoami 2>/dev/null`" = "root" ]; then
   IAMROOT="1"
-  printf "Script executed as root...\n"
 else
   IAMROOT="0"
   printf "WARNING: This script has not been executed with root privileges.\nExiting...\n"
   exit
 fi
 
-#Change directory to script directory.
-parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
-cd "$parent_path"
+
 
 #Ensure Path Variable Contains sbin
 PATH=$PATH:/usr/sbin
@@ -23,37 +67,88 @@ allLocalUsers=$(cat /etc/passwd | awk -F ':' '{print $1}')
 #Get Red Hat Release Version
 release=$(grep -E -o "8\.[0-9]+" /etc/redhat-release)
 
+#Question Numbers to Finding ID
+questionNumberToFindingID=("V-230329" "V-230529" "V-230530" "V-230222" "V-230224" "V-230225" "V-230226" "V-230227" "V-230228" "V-230229" "V-230230" "V-230240" "V-230243" "V-230251" "V-230252" "V-230254" "V-230256" "V-230260" "V-230261" "V-230262" "V-230263" "V-230274" "V-230275" "V-230276" "V-230277" "V-230278" "V-230279" "V-230299" "V-230302" "V-230303" "V-230304" "V-230305" "V-230309" "V-230310" "V-230312" "V-230316" "V-230317" "V-230318" "V-230319" "V-230320" "V-230321" "V-230322" "V-230323" "V-230325" "V-230326" "V-230327" "V-230328" "V-230331" "V-230338" "V-230339" "V-230347" "V-230351" "V-230352" "V-230353" "V-230354" "V-230355" "V-230371" "V-230372" "V-230374" "V-230376" "V-230379" "V-230384" "V-230385" "V-230387" "V-230389" "V-230466" "V-230475" "V-230476" "V-230479" "V-230481" "V-230482" "V-230484" "V-230493" "V-230500" "V-230502" "V-230504" "V-230505" "V-230506" "V-230523" "V-230524" "V-230525" "V-230532" "V-230553" "V-230554" "V-244519" "V-244521" "V-244522" "V-244523" "V-244524" "V-244525" "V-244526" "V-244528" "V-244529" "V-244530" "V-244531" "V-244532" "V-244533" "V-244534" "V-244535" "V-244536" "V-244537" "V-244538" "V-244539" "V-244542" "V-244543" "V-244544" "V-244545" "V-244546" "V-244547" "V-244548" "V-244549" "V-244550" "V-244551" "V-244552" "V-244553" "V-245540" "V-250315" "V-250316" "V-250317" "V-251707" "V-251708" "V-251709" "V-251710" "V-251711" "V-251712" "V-251713" "V-251714" "V-251715" "V-251716" "V-251717" "V-251718" "V-254520" "V-255924" "V-230285" "V-230381" "V-230468" "V-230469" "V-230470" "V-230491" "V-230551" "V-230552" "V-244527")
+
 
 #########FUNCTIONS##########
 printResults () {
 	questionNumber=$1
 	result=$2
 	reason=$3
-
-	case $result in
-		"FIND")
-			printf "Question Number $questionNumber: Finding\n"
-			printf "\tReason: $reason\n"
-			;;
-		"NFIND")
-			printf "Question Number $questionNumber: Not a Finding.\n"
-			;;
-		"PFIND")
-			printf "Question Number $questionNumber: Potential Finding: $reason\n"
-			;;
-		"REVIEW")
-			printf "Question Number $questionNumber: $reason\n"
-			;;
-		"ADD")
-			printf "\t$reason\n"
-			;;
-		"NOTAPPLICABLE")
-			printf "Question Number $questionNumber: Not applicable.\n"
-			;;
-		*)
-			printf "ERROR"
-			;;
-	esac
+	
+	if [[ $useFindingID == "TRUE" ]]; then
+		questionNumber=${questionNumberToFindingID[$questionNumber-1]}
+		case $result in
+			"FIND")
+				printf "Finding ID $questionNumber: Finding\n"
+				if [[ $verbose == "TRUE" ]]; then
+					printf "\tReason: $reason\n"
+				fi
+				;;
+			"NFIND")
+				if [[ $verbose == "TRUE" ]]; then
+					printf "Finding ID $questionNumber: Not a Finding.\n"
+				else
+					printf ""
+				fi
+				;;
+			"PFIND")
+				printf "Finding ID $questionNumber: Potential Finding: $reason\n"
+				;;
+			"REVIEW")
+				printf "Finding ID $questionNumber: $reason\n"
+				;;
+			"ADD")
+				printf "\t$reason\n"
+				;;
+			"NOTAPPLICABLE")
+				if [[ $verbose == "TRUE" ]]; then
+					printf "Finding ID $questionNumber: Not applicable.\n"
+				else
+					printf ""
+				fi
+				;;
+			*)
+				printf "ERROR"
+				;;
+		esac
+	else
+		case $result in
+			"FIND")
+				printf "Question Number $questionNumber: Finding\n"
+				if [[ $verbose == "TRUE" ]]; then
+					printf "\tReason: $reason\n"
+				fi
+				;;
+			"NFIND")
+				if [[ $verbose == "TRUE" ]]; then
+					printf "Question Number $questionNumber: Not a Finding.\n"
+				else
+					printf ""
+				fi
+				;;
+			"PFIND")
+				printf "Question Number $questionNumber: Potential Finding: $reason\n"
+				;;
+			"REVIEW")
+				printf "Question Number $questionNumber: $reason\n"
+				;;
+			"ADD")
+				printf "\t$reason\n"
+				;;
+			"NOTAPPLICABLE")
+				if [[ $verbose == "TRUE" ]]; then
+					printf "Question Number $questionNumber: Not applicable.\n"
+				else
+					printf ""
+				fi
+				;;
+			*)
+				printf "ERROR"
+				;;
+		esac
+	fi
 }
 
 
@@ -63,10 +158,6 @@ checkForSetting () {
 	searchString=$1
 	searchLocation=$2
 	questionNumber=$3
-
-	#echo $searchString
-	#echo $searchLocation
-	#echo $questionNumber
 
 	searchResults=$(grep -rioh $searchString $searchLocation 2>/dev/null)
 	IFS=$oldIFS
