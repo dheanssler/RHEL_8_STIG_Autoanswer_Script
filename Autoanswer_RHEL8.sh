@@ -1445,7 +1445,7 @@ aideChecks () {
 	questionNumber=$1
 	case $questionNumber in
 	"123")
-		installationStatus=$(yum list installed aide* -q 2>/dev/null | tail -n+2)
+		installationStatus=$(yum list installed aide -q 2>/dev/null | tail -n+2)
 		if [[ $installationStatus =~ "aide" ]]; then
 			isAIDEConfigured=$(aide --check)
 			if [[ $isAIDEConfigured == "Couldn't open file"* ]]; then
@@ -1458,8 +1458,10 @@ aideChecks () {
 		fi
 	;;
 	"140")
-		installationStatus=$(yum list installed aide* -q 2>/dev/null | tail -n+2)
+		installationStatus=$(yum list installed aide -q 2>/dev/null | tail -n+2)
+		echo "$installationStatus"
 		printResults "$questionNumber" "REVIEW" "Review the following output. If AIDE rules do not verify the extended attributes for all of the files and directories monitored by AIDE, this is a finding."
+
 		if [[ $installationStatus =~ "aide" ]]; then
 			compliantAideRules=$(grep -v "#" /etc/aide.conf | grep -E "[A-Z,_]+\s+=\s+.*xattrs")
 			compliantAideRuleNames=$(echo -n "$compliantAideRules" | awk '{print $1}')
@@ -1489,9 +1491,9 @@ aideChecks () {
 		fi
 	;;
 	"141")
-		installationStatus=$(yum list installed aide* -q 2>/dev/null | tail -n+2)
+		installationStatus=$(yum list installed aide -q 2>/dev/null | tail -n+2)
 		printResults "$questionNumber" "REVIEW" "Review the following output. If AIDE rules do not verify the access controls for all of the files and directories monitored by AIDE, this is a finding."
-		if [[ $installationStatus =~ "aide" ]]; then
+		if [[ $installationStatus =~ *"aide"* ]]; then
 			compliantAideRules=$(grep -v "#" /etc/aide.conf | grep -E "[A-Z,_]+\s+=\s+.*acl")
 			compliantAideRuleNames=$(echo -n "$compliantAideRules" | awk '{print $1}')
 			compliantAideRuleNames=${compliantAideRuleNames^^}
@@ -1767,7 +1769,6 @@ checkPasswordRequirements "50"
 checkCommandOutput "true" "gsettings get org.gnome.desktop.screensaver lock-enabled" "true" "51"
 checkForSetting "removal-action='lock-screen'" "/etc/dconf/db/*" "52"
 checkGnomeSetting "53" "SESSIONLOCK"
-#20230522
 checkForSetting "lock-after-time 900" "/etc/tmux.conf" "54"
 checkForSetting "/org/gnome/desktop/screensaver/lock-delay" "/etc/dconf/db/local.d/locks/*" "55"
 checkCertificateMapping "56"
