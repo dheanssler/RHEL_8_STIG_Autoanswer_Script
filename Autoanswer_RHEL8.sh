@@ -1459,8 +1459,7 @@ aideChecks () {
 	;;
 	"140")
 		installationStatus=$(yum list installed aide -q 2>/dev/null | tail -n+2)
-		echo "$installationStatus"
-		printResults "$questionNumber" "REVIEW" "Review the following output. If AIDE rules do not verify the extended attributes for all of the files and directories monitored by AIDE, this is a finding."
+		printResults "$questionNumber" "REVIEW" "Review the following output. If there are any 'FAILS' then the AIDE rules do not verify the extended attributes for all of the files and directories monitored by AIDE. This is a finding."
 
 		if [[ $installationStatus =~ "aide" ]]; then
 			compliantAideRules=$(grep -v "#" /etc/aide.conf | grep -E "[A-Z,_]+\s+=\s+.*xattrs")
@@ -1482,6 +1481,8 @@ aideChecks () {
 				IFS=$'\n'
 				if ! [[ $numberOfFails -lt $(echo -n "$lineRules" | wc -w) ]]; then
 					printResults "$questionNumber" "ADD" "FAIL: AIDE is not configured to verify the extended attributes for the file/directory '$(echo -n "$line" | awk '{print $1}')', this is a finding."
+				else
+					#printResults "$questionNumber" "ADD" "PASS: AIDE is configured to verify the extended attributes for the file/directory '$(echo -n "$line" | awk '{print $1}')'."
 				fi
 			done
 			IFS=$oldIFS
@@ -1492,8 +1493,8 @@ aideChecks () {
 	;;
 	"141")
 		installationStatus=$(yum list installed aide -q 2>/dev/null | tail -n+2)
-		printResults "$questionNumber" "REVIEW" "Review the following output. If AIDE rules do not verify the access controls for all of the files and directories monitored by AIDE, this is a finding."
-		if [[ $installationStatus =~ *"aide"* ]]; then
+		printResults "$questionNumber" "REVIEW" "Review the following output. If there are any 'FAILS' then the AIDE rules do not verify the access controls for all of the files and directories monitored by AIDE. This is a finding."
+		if [[ $installationStatus =~ "aide" ]]; then
 			compliantAideRules=$(grep -v "#" /etc/aide.conf | grep -E "[A-Z,_]+\s+=\s+.*acl")
 			compliantAideRuleNames=$(echo -n "$compliantAideRules" | awk '{print $1}')
 			compliantAideRuleNames=${compliantAideRuleNames^^}
@@ -1713,7 +1714,7 @@ checkCertificateMapping () {
 	fi
 }
 
-
+<<com
 checkForSetting "automaticloginenable=false" "/etc/gdm/custom.conf" "1"
 checkUnitFile "ctrl-alt-del.target" "masked" "1" "2" "inactive"
 checkForSetting "logout=''" "/etc/dconf/db/local.d/*" "3"
@@ -1861,3 +1862,6 @@ checkGrubSetting "139" "pti" "on" "TEXT"
 aideChecks "140"
 aideChecks "141"
 packageInstalled "142" "rng-tools" "FALSE"
+com
+
+aideChecks "140"
